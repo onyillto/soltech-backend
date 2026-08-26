@@ -1,0 +1,781 @@
+/* ---------------------------------------------------------------------- */
+/* SOLTECH Hub design system                                              */
+/* Dark navy shell + warm paper content, serif for headings and data      */
+/* emphasis (echoes the pitch deck's big stat numbers). --brand is the    */
+/* real SOLTECH mark's two blues, used for brand elements (primary        */
+/* buttons, sidebar, active nav, logo). amber/teal/green/red are kept as  */
+/* a separate STATUS palette (caution/neutral/good/danger) — recoloring   */
+/* those to blue too would make occupied/available/closed all look like  */
+/* shades of the same color and lose the signal. Hairline borders         */
+/* instead of heavy shadows.                                             */
+/* ---------------------------------------------------------------------- */
+
+:root {
+  --bg-shell: #0a1a26;
+  --bg-shell-elevated: #12293b;
+  --bg-app: #f6f3ec;
+  --surface: #ffffff;
+  --border: #e3ddd0;
+  --border-soft: #ece7da;
+  --border-dark: rgba(255, 255, 255, 0.1);
+
+  --text: #1c231f;
+  --text-soft: #5b6660;
+  --text-faint: #8a9490;
+  --text-invert: #f3f1e9;
+  --text-invert-soft: #a9b8ae;
+
+  /* Brand — the two blues from the SOLTECH mark. */
+  --brand: #2c5a82;
+  --brand-strong: #1d3f5c;
+  --brand-soft: #dce8f1;
+  --brand-light: #a9cde4;
+
+  /* A second sequential hue for charts that plot a distinct metric alongside
+     a brand-colored one (e.g. revenue next to transaction count) — kept out
+     of the status palette above so it never impersonates a status. */
+  --chart-2: #4a3aa7;
+
+  /* Status palette — deliberately independent of brand color. */
+  --accent: #d98a34;
+  --accent-strong: #b56d22;
+  --accent-soft: #f6e3c8;
+  --teal: #1c6b6f;
+  --teal-strong: #0f4d50;
+  --teal-soft: #dcecec;
+  --green: #3f7d52;
+  --green-soft: #e1eee3;
+  --red: #b1462f;
+  --red-soft: #f6e2dc;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --shadow-1: 0 1px 2px rgba(20, 15, 5, 0.06);
+  --shadow-2: 0 8px 24px rgba(8, 18, 28, 0.2);
+
+  --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background: var(--bg-app);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--text);
+}
+
+p {
+  margin: 0 0 12px;
+  color: var(--text-soft);
+  line-height: 1.5;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* ---------------------------------------------------------------------- */
+/* App shell                                                              */
+/* ---------------------------------------------------------------------- */
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: var(--bg-shell);
+  color: var(--text-invert);
+  display: flex;
+  flex-direction: column;
+  padding: 22px 16px;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 22px;
+}
+
+.sidebar-brand .brand-name {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.sidebar-brand .brand-tag {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-invert-soft);
+  margin-top: 1px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-invert-soft);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border-left: 3px solid transparent;
+}
+
+.sidebar-link:hover {
+  background: var(--bg-shell-elevated);
+  color: var(--text-invert);
+}
+
+.sidebar-link.active {
+  background: var(--bg-shell-elevated);
+  color: var(--text-invert);
+  border-left-color: var(--brand-light);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 14px 10px 4px;
+  border-top: 1px solid var(--border-dark);
+}
+
+.sidebar-user {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.sidebar-user .name {
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.sidebar-user .email {
+  font-size: 0.72rem;
+  color: var(--text-invert-soft);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.topbar {
+  height: 62px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 30px;
+}
+
+.topbar h1 {
+  font-size: 1.1rem;
+}
+
+.topbar .subtitle {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  margin-top: 1px;
+}
+
+.content {
+  padding: 28px 32px 72px;
+  max-width: 1200px;
+  width: 100%;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Logo mark                                                              */
+/* ---------------------------------------------------------------------- */
+
+.logo-mark {
+  flex-shrink: 0;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Page header                                                            */
+/* ---------------------------------------------------------------------- */
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.page-header h2 {
+  font-size: 1.4rem;
+}
+
+.page-header .lede {
+  max-width: 60ch;
+  font-size: 0.92rem;
+  margin-bottom: 0;
+}
+
+.section {
+  margin-bottom: 34px;
+}
+
+.section-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Stat cards                                                             */
+/* ---------------------------------------------------------------------- */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+.stat-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px 14px;
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--stat-accent, var(--accent));
+}
+
+.stat-card .value {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  line-height: 1.1;
+}
+
+.stat-card .label {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-soft);
+  margin-top: 4px;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Cards / panels                                                         */
+/* ---------------------------------------------------------------------- */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.panel-header h3 {
+  font-size: 1rem;
+}
+
+.panel-body {
+  padding: 18px 20px;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-1);
+}
+
+.tile .tile-title {
+  font-weight: 700;
+  font-size: 0.94rem;
+  margin-bottom: 2px;
+}
+
+.tile .tile-meta {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Tables                                                                 */
+/* ---------------------------------------------------------------------- */
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.data-table th {
+  text-align: left;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-faint);
+  font-weight: 700;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: middle;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tr:hover td {
+  background: #fbfaf6;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Badges                                                                 */
+/* ---------------------------------------------------------------------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.badge--green {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.badge--amber {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+.badge--teal {
+  background: var(--teal-soft);
+  color: var(--teal-strong);
+}
+.badge--red {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.badge--muted {
+  background: #edeae1;
+  color: var(--text-soft);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Buttons                                                                */
+/* ---------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 9px 16px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.btn--primary {
+  background: var(--brand);
+  color: #f3f8fb;
+}
+.btn--primary:hover {
+  background: var(--brand-strong);
+}
+
+.btn--teal {
+  background: var(--teal);
+  color: #eefaf9;
+}
+.btn--teal:hover {
+  background: var(--teal-strong);
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+.btn--ghost:hover {
+  border-color: var(--text-faint);
+}
+
+.btn--danger {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.btn--danger:hover {
+  background: var(--red);
+  color: #fff;
+}
+
+.btn--sm {
+  padding: 6px 12px;
+  font-size: 0.76rem;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Forms                                                                  */
+/* ---------------------------------------------------------------------- */
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.field label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-soft);
+}
+
+.field input,
+.field select,
+.field textarea {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 10px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: 2px solid var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Misc                                                                   */
+/* ---------------------------------------------------------------------- */
+
+.empty-state {
+  padding: 34px 20px;
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 0.86rem;
+}
+
+.error-text {
+  color: var(--red);
+  font-size: 0.82rem;
+  margin: 6px 0 0;
+}
+
+.hint {
+  font-size: 0.76rem;
+  color: var(--text-faint);
+  margin-top: 4px;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.center-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-shell);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Modal                                                                  */
+/* ---------------------------------------------------------------------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 20, 30, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 200;
+}
+
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-2);
+  width: 520px;
+  max-width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.modal-header h3 {
+  font-size: 1.05rem;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--text-faint);
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.modal-close:hover {
+  color: var(--text);
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Charts                                                                 */
+/* ---------------------------------------------------------------------- */
+
+.bar-chart-wrap {
+  position: relative;
+  overflow-x: auto;
+}
+
+.bar-chart-wrap svg rect {
+  cursor: pointer;
+  transition: opacity 0.1s ease;
+}
+.bar-chart-wrap svg rect:focus-visible {
+  outline: 2px solid var(--brand-light);
+  outline-offset: 1px;
+}
+
+.chart-tooltip {
+  position: absolute;
+  top: 4px;
+  transform: translateX(-50%);
+  background: var(--bg-shell-elevated);
+  color: var(--text-invert);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 0.76rem;
+  box-shadow: var(--shadow-2);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 5;
+}
+
+.chart-tooltip-value {
+  font-weight: 700;
+}
+
+.chart-tooltip-label {
+  color: var(--text-invert-soft);
+  font-size: 0.68rem;
+}
+
+.chart-toggle {
+  margin-top: 10px;
+}
+
+.rental-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.82rem;
+}
+
+.rental-price-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--brand-soft);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-top: 4px;
+}
+
+.rental-price-preview-total {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.rental-price-preview-rate {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--brand-strong);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Toasts                                                                 */
+/* ---------------------------------------------------------------------- */
+
+.toast-stack {
+  position: fixed;
+  bottom: 22px;
+  right: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 100;
+}
+
+.toast {
+  background: var(--bg-shell-elevated);
+  color: var(--text-invert);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 0.84rem;
+  box-shadow: var(--shadow-2);
+  max-width: 320px;
+  border-left: 3px solid var(--teal);
+}
+
+.toast.error {
+  border-left-color: var(--red);
+}
+.toast.success {
+  border-left-color: var(--green);
+}

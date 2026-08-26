@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+coverage/
+TEST_CREDENTIALS.md
+.scratch-mongo.js
+atlas-credentials.env
+*-credentials.env

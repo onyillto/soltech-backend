@@ -1,0 +1,40 @@
+# DigitalOcean App Platform spec. Optional convenience — App Platform reads
+# this automatically if present when you create an app "from source code"
+# pointed at this repo, so you don't have to click through every setting.
+# You can also skip this file entirely and configure everything in the
+# dashboard instead; either way works.
+#
+# Before using this: replace `github.repo` below with your actual
+# "owner/repo-name", and set the SECRET env vars' real values in the
+# dashboard after the app is created (never commit real secrets here).
+
+name: soltech-backend
+services:
+  - name: api
+    dockerfile_path: Dockerfile
+    source_dir: /
+    github:
+      repo: your-github-username/soltech-backend
+      branch: main
+      deploy_on_push: true
+    http_port: 4000
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    health_check:
+      http_path: /api/v1/health
+    envs:
+      - key: NODE_ENV
+        scope: RUN_TIME
+        value: "production"
+      - key: MONGO_URI
+        scope: RUN_TIME
+        type: SECRET
+      - key: JWT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: JWT_EXPIRES_IN
+        scope: RUN_TIME
+        value: "7d"
+      - key: CORS_ORIGIN
+        scope: RUN_TIME
+        value: "*"
