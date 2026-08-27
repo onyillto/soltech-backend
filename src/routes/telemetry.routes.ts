@@ -20,6 +20,12 @@ const router = Router();
  *       creation or rotation, and never again). Store this reading, and it
  *       also feeds the cold-chain temperature alerting: a unit that stays at
  *       or above the alert threshold with produce in it triggers an Alert.
+ *
+ *       temperatureC is the primary/representative reading alerting keys off
+ *       of. The nine ambientC/evaporatorInC/.../rightNearDoorC fields are all
+ *       optional, for a sensor rig that reports a full multi-point grid
+ *       (ambient air, evaporator coil in/out, six positions inside the
+ *       storage compartment) rather than a single probe.
  *     tags: [Telemetry]
  *     security: [{ deviceKeyAuth: [] }]
  *     requestBody:
@@ -31,7 +37,16 @@ const router = Router();
  *             required: [unit, temperatureC]
  *             properties:
  *               unit: { type: string, description: "Cooling unit id", example: "66f1a2b3c4d5e6f7a8b9c0d1" }
- *               temperatureC: { type: number, example: 4.6 }
+ *               temperatureC: { type: number, description: "Primary reading — what alerting/summary key off", example: 4.6 }
+ *               ambientC: { type: number, description: "Outside air temperature" }
+ *               evaporatorInC: { type: number, description: "Refrigerant temperature into the evaporator coil" }
+ *               evaporatorOutC: { type: number, description: "Refrigerant temperature out of the evaporator coil" }
+ *               leftInsideC: { type: number, description: "Storage compartment, left interior" }
+ *               rightInsideC: { type: number, description: "Storage compartment, right interior" }
+ *               leftMiddleC: { type: number, description: "Storage compartment, left middle" }
+ *               rightMiddleC: { type: number, description: "Storage compartment, right middle" }
+ *               leftNearDoorC: { type: number, description: "Storage compartment, left near the door" }
+ *               rightNearDoorC: { type: number, description: "Storage compartment, right near the door" }
  *               batteryPercent: { type: number, minimum: 0, maximum: 100, example: 82 }
  *               solarInputWatts: { type: number, minimum: 0, example: 140 }
  *               energyConsumedWh: { type: number, minimum: 0, example: 18.4 }
@@ -55,11 +70,24 @@ const router = Router();
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ApiErrorResponse' }
  */
+const PROBE_FIELDS = [
+  "ambientC",
+  "evaporatorInC",
+  "evaporatorOutC",
+  "leftInsideC",
+  "rightInsideC",
+  "leftMiddleC",
+  "rightMiddleC",
+  "leftNearDoorC",
+  "rightNearDoorC",
+] as const;
+
 router.post(
   "/",
   [
     body("unit").isMongoId().withMessage("A valid unit id is required"),
     body("temperatureC").isFloat().withMessage("temperatureC is required"),
+    ...PROBE_FIELDS.map((field) => body(field).optional().isFloat().withMessage(`${field} must be a number`)),
   ],
   validate,
   deviceAuth,

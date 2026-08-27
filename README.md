@@ -22,9 +22,12 @@ market women, and traders in local farming communities in Nigeria — supporting
   cold baskets inside a unit, rented by farmers/traders at a weight-tiered daily rate
   (₦200/day up to 10kg, +₦100/day per additional 10kg — see `constants/billing.ts`),
   with payment records against each rental.
-- **IoT telemetry** — temperature/battery/solar readings ingested from a device on each
-  unit, authenticated by a per-unit device key rather than a user login, plus a summary
-  endpoint (min/max/avg temperature, energy use) over a time window.
+- **IoT telemetry** — readings ingested from a device on each unit, authenticated by a
+  per-unit device key rather than a user login, plus a summary endpoint (min/max/avg
+  temperature, energy use) over a time window. `temperatureC` is the primary/representative
+  reading; nine optional named probes (`ambientC`, `evaporatorInC`/`evaporatorOutC`, and
+  six storage-compartment positions) match the real multi-point thermocouple rig used for
+  cold-box validation — a simpler single-probe sensor can still report with just `temperatureC`.
 - **VET training & learning outcomes** — courses, modules, and enrollments with
   progress tracking toward course completion.
 
