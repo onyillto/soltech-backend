@@ -18,6 +18,9 @@ export const env = {
   jwtSecret: required("JWT_SECRET", "dev_secret_change_me"),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "7d",
   corsOrigin: process.env.CORS_ORIGIN ?? "*",
+  /** The real public URL (e.g. https://soltechhub.netuneatlantic.com/api/v1) — only used
+   *  to list a working server in Swagger's "Try it out". Leave unset in local dev. */
+  publicApiUrl: process.env.PUBLIC_API_URL,
 };
 
 export const isProduction = env.nodeEnv === "production";

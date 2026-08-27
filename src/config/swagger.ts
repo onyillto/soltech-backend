@@ -18,7 +18,10 @@ const options: swaggerJsdoc.Options = {
         "Off-grid cold-chain and VET training API for SOLTECH Hub. " +
         "Send the JWT from /auth/login or /auth/admin/login as `Authorization: Bearer <token>`.",
     },
-    servers: [{ url: `http://localhost:${env.port}/api/v1`, description: "Local" }],
+    servers: [
+      ...(env.publicApiUrl ? [{ url: env.publicApiUrl, description: "Production" }] : []),
+      { url: `http://localhost:${env.port}/api/v1`, description: "Local" },
+    ],
     components: {
       securitySchemes: {
         bearerAuth: {
