@@ -124,7 +124,11 @@ All routes are namespaced under `/api/v1`. Health check: `GET /api/v1/health`.
 
 **Interactive docs: `GET /api-docs`** (e.g. http://localhost:4000/api-docs) — a
 Swagger UI generated from `@swagger` JSDoc blocks on the route files
-(`src/config/swagger.ts` builds the spec). Currently `/auth`, `/alerts`,
+(`src/config/swagger.ts` builds the spec; raw JSON at `GET /api-docs/openapi.json`).
+The UI page (`src/config/swaggerHtml.ts`) loads Swagger UI's JS/CSS from a CDN
+rather than serving it locally — `swagger-ui-express`'s usual local static
+files don't survive a serverless deploy's dependency tracing (Vercel), so this
+works the same way everywhere instead of only on the Droplet. Currently `/auth`, `/alerts`,
 `/cooling-hubs/:id/assign`, and `/baskets/available`+`/baskets/bulk` are fully
 documented there; the rest of the table below follows the same pattern
 whenever it's worth adding.
