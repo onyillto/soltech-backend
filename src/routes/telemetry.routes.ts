@@ -10,27 +10,21 @@ const router = Router();
  * @swagger
  * /telemetry:
  *   post:
- *     summary: Push a sensor reading (public — no auth of any kind)
+ *     summary: Ingest a sensor reading
  *     description: >
- *       This is the one endpoint a sensor/device integrates with. Fully
- *       open on purpose: no Bearer token, no device key, nothing — just a
- *       valid unit id and a reading. That means anyone who knows (or
- *       guesses) a unit id can post a reading for it; this was a deliberate
- *       simplicity-over-security tradeoff, not an oversight. Store this
- *       reading, and it also feeds the cold-chain temperature alerting: a
- *       unit that stays at or above the alert threshold with produce in it
- *       triggers an Alert.
+ *       Public endpoint, no auth. Any caller with a valid unit id can post.
  *
- *       temperatureC is the primary/representative reading alerting keys off
- *       of. The nine ambientC/evaporatorInC/.../rightNearDoorC fields are all
- *       optional, for a sensor rig that reports a full multi-point grid
- *       (ambient air, evaporator coil in/out, six positions inside the
- *       storage compartment) rather than a single probe.
+ *       temperatureC is required; it's the primary reading alerting and
+ *       summary use. The nine probe fields (ambientC, evaporatorInC,
+ *       evaporatorOutC, leftInsideC, rightInsideC, leftMiddleC,
+ *       rightMiddleC, leftNearDoorC, rightNearDoorC) are optional, for rigs
+ *       reporting a full multi-point grid instead of one sensor.
  *
- *       The example below pre-fills a real unit id (TRL-001, at the Garki
- *       hub) — clicking "Try it out" then "Execute" with it as-is will
- *       actually succeed, not 404. If that unit is ever deleted/recreated,
- *       update this example to a current real id.
+ *       Sustained high temperature with active produce in the unit raises
+ *       an Alert.
+ *
+ *       Example uses a live unit (TRL-001, Garki hub) — Execute as-is
+ *       returns 201. Update the id if that unit is ever recreated.
  *     tags: [Telemetry]
  *     requestBody:
  *       required: true
