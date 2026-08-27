@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Types } from "mongoose";
 import { crudFactory } from "../utils/crudFactory";
 import { TelemetryReading } from "../models/TelemetryReading";
+import { CoolingUnit } from "../models/CoolingUnit";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiError } from "../utils/ApiError";
 import { checkForHighTemperatureAlert } from "../services/coldChainMonitor";
@@ -11,8 +12,15 @@ const base = crudFactory(TelemetryReading, {
   filterableFields: ["unit", "source"],
 });
 
-/** Ingests one reading from a device, authenticated via deviceAuth (not a user JWT). */
+/**
+ * Ingests one reading — no authentication at all (see telemetry.routes.ts
+ * for why). Still checks the unit actually exists, purely for data
+ * integrity (no orphaned readings against a bad id) — not a security gate.
+ */
 const create = asyncHandler(async (req: Request, res: Response) => {
+  const unitExists = await CoolingUnit.exists({ _id: req.body.unit });
+  if (!unitExists) throw ApiError.notFound("Cooling unit not found");
+
   const reading = await TelemetryReading.create({
     unit: req.body.unit,
     recordedAt: req.body.recordedAt ?? new Date(),

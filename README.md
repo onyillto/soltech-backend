@@ -22,8 +22,9 @@ market women, and traders in local farming communities in Nigeria — supporting
   cold baskets inside a unit, rented by farmers/traders at a weight-tiered daily rate
   (₦200/day up to 10kg, +₦100/day per additional 10kg — see `constants/billing.ts`),
   with payment records against each rental.
-- **IoT telemetry** — readings ingested from a device on each unit, authenticated by a
-  per-unit device key rather than a user login, plus a summary endpoint (min/max/avg
+- **IoT telemetry** — readings ingested from a device on each unit. `POST /telemetry` is
+  fully public — no user login, no device key, nothing (a deliberate simplicity-over-security
+  choice, not an oversight; see the note below) — plus a summary endpoint (min/max/avg
   temperature, energy use) over a time window. `temperatureC` is the primary/representative
   reading; nine optional named probes (`ambientC`, `evaporatorInC`/`evaporatorOutC`, and
   six storage-compartment positions) match the real multi-point thermocouple rig used for
@@ -148,7 +149,7 @@ whenever it's worth adding.
 | Baskets | `/baskets` | individual cold baskets within a unit; `GET /available` (optionally `?unit=`) for baskets ready to rent; `POST /bulk` provisions every basket for a unit at once (`count` defaults to the unit's `basketCapacity`, e.g. 110 — idempotent, safe to re-run) |
 | Basket rentals | `/basket-rentals` | `POST` to start a rental (basket must be `available`; `items: [{produceType, quantityKg}]` — one or more produce entries, total capped at the basket's `capacityKg`) — the daily rate is auto-computed from total weight unless overridden; `PATCH /:id/close` to end it and compute the bill; `GET /:id` on an open rental includes a live `estimatedAmountDueKobo`; `GET /summary?days=30` returns totals + a daily transaction/weight/revenue series for reporting |
 | Payments | `/payments` | records a payment (cash/transfer/mobile money/card) against a rental — admin/staff only |
-| Telemetry | `/telemetry` | `POST` ingests a reading, authenticated via `x-device-key` header (no user JWT); `GET /latest?unit=` and `GET /summary?unit=&hours=24` for monitoring |
+| Telemetry | `/telemetry` | `POST` ingests a reading — **fully public, no auth at all** (only checks the unit id is real); `GET` endpoints (list/latest/summary) still require a normal user login |
 | Courses | `/courses` | VET course catalog |
 | Modules | `/modules` | lessons within a course |
 | Enrollments | `/enrollments` | `POST` to enroll, `PATCH /:id/complete-module` to record progress |
@@ -183,7 +184,12 @@ This is a working scaffold, not a finished product. Reasonable next additions:
   computed from `ColdBoxLog` via an aggregation endpoint rather than stored per event.
 - File uploads for course resources and certificates.
 - Seed script + integration tests.
-- Rate limiting on `/auth` endpoints (and on `/telemetry` device ingestion).
+- Rate limiting on `/auth` endpoints (and on `/telemetry` ingestion — now more important
+  than before, since that endpoint has no auth at all and rate limiting is the only
+  remaining guard against someone hammering it or flooding fake readings).
+- `src/middleware/deviceAuth.ts` and the `deviceKeyAuth` scheme in `swagger.ts` are dead
+  code now that `/telemetry` doesn't check the device key — left in place (and `CoolingUnit`
+  still generates/rotates one) in case device-key auth gets re-enabled later, not removed.
 - Payment reconciliation (tracking outstanding balance per rental across partial
   payments) — currently `Payment` records are independent entries against a rental,
   not reconciled against `amountDueKobo` automatically.
