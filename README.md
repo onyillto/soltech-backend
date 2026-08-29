@@ -133,9 +133,9 @@ The UI page (`src/config/swaggerHtml.ts`) loads Swagger UI's JS/CSS from a CDN
 rather than serving it locally — `swagger-ui-express`'s usual local static
 files don't survive a serverless deploy's dependency tracing (Vercel), so this
 works the same way everywhere instead of only on the Droplet. Currently `/auth`, `/alerts`,
-`/cooling-hubs/:id/assign`, and `/baskets/available`+`/baskets/bulk` are fully
-documented there; the rest of the table below follows the same pattern
-whenever it's worth adding.
+`/cooling-hubs/:id/assign`, `/baskets/available`+`/baskets/bulk`, `/telemetry`, and
+`/humidity` are fully documented there; the rest of the table below follows the same
+pattern whenever it's worth adding.
 
 | Resource | Base path | Notes |
 |---|---|---|
@@ -150,6 +150,7 @@ whenever it's worth adding.
 | Basket rentals | `/basket-rentals` | `POST` to start a rental (basket must be `available`; `items: [{produceType, quantityKg}]` — one or more produce entries, total capped at the basket's `capacityKg`) — the daily rate is auto-computed from total weight unless overridden; `PATCH /:id/close` to end it and compute the bill; `GET /:id` on an open rental includes a live `estimatedAmountDueKobo`; `GET /summary?days=30` returns totals + a daily transaction/weight/revenue series for reporting |
 | Payments | `/payments` | records a payment (cash/transfer/mobile money/card) against a rental — admin/staff only |
 | Telemetry | `/telemetry` | `POST` ingests a reading — **fully public, no auth at all** (only checks the unit id is real); `GET` endpoints (list/latest/summary) still require a normal user login |
+| Humidity | `/humidity` | Same shape and same public-ingestion pattern as `/telemetry`, but a separate model/endpoint — a standalone humidity sensor, not the same device/reading as temperature. `humidityPercent` (0-100) only |
 | Courses | `/courses` | VET course catalog |
 | Modules | `/modules` | lessons within a course |
 | Enrollments | `/enrollments` | `POST` to enroll, `PATCH /:id/complete-module` to record progress |
