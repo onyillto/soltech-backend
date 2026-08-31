@@ -13,6 +13,7 @@ export interface ITelemetryReading extends Document {
   unit: Types.ObjectId;
   recordedAt: Date;
   temperatureC: number;
+  humidityPercent?: number;
   ambientC?: number;
   evaporatorInC?: number;
   evaporatorOutC?: number;
@@ -35,6 +36,7 @@ const telemetryReadingSchema = new Schema<ITelemetryReading>(
     unit: { type: Schema.Types.ObjectId, ref: "CoolingUnit", required: true },
     recordedAt: { type: Date, required: true, default: Date.now },
     temperatureC: { type: Number, required: true },
+    humidityPercent: { type: Number, min: 0, max: 100 },
     ambientC: { type: Number },
     evaporatorInC: { type: Number },
     evaporatorOutC: { type: Number },

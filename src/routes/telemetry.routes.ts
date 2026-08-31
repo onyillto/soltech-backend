@@ -12,19 +12,14 @@ const router = Router();
  *   post:
  *     summary: Ingest a sensor reading
  *     description: >
- *       Public endpoint, no auth. Any caller with a valid unit id can post.
- *
- *       temperatureC is required; it's the primary reading alerting and
- *       summary use. The nine probe fields (ambientC, evaporatorInC,
- *       evaporatorOutC, leftInsideC, rightInsideC, leftMiddleC,
- *       rightMiddleC, leftNearDoorC, rightNearDoorC) are optional, for rigs
- *       reporting a full multi-point grid instead of one sensor.
+ *       Public endpoint, no auth. Any caller with a valid unit id can post
+ *       one reading: temperature and relative humidity for that unit.
  *
  *       Sustained high temperature with active produce in the unit raises
  *       an Alert.
  *
- *       Example uses a live unit (TRL-001, Garki hub) — Execute as-is
- *       returns 201. Update the id if that unit is ever recreated.
+ *       The example id is the seeded unit (TRL-001) — Execute as-is returns
+ *       201 after `npm run seed`.
  *     tags: [Telemetry]
  *     requestBody:
  *       required: true
@@ -32,43 +27,20 @@ const router = Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [unit, temperatureC]
+ *             required: [unit, temperatureC, humidityPercent]
  *             properties:
  *               unit: { type: string, description: "Cooling unit id" }
- *               temperatureC: { type: number, description: "Primary reading — what alerting/summary key off" }
- *               ambientC: { type: number, description: "Outside air temperature" }
- *               evaporatorInC: { type: number, description: "Refrigerant temperature into the evaporator coil" }
- *               evaporatorOutC: { type: number, description: "Refrigerant temperature out of the evaporator coil" }
- *               leftInsideC: { type: number, description: "Storage compartment, left interior" }
- *               rightInsideC: { type: number, description: "Storage compartment, right interior" }
- *               leftMiddleC: { type: number, description: "Storage compartment, left middle" }
- *               rightMiddleC: { type: number, description: "Storage compartment, right middle" }
- *               leftNearDoorC: { type: number, description: "Storage compartment, left near the door" }
- *               rightNearDoorC: { type: number, description: "Storage compartment, right near the door" }
- *               batteryPercent: { type: number, minimum: 0, maximum: 100 }
- *               solarInputWatts: { type: number, minimum: 0 }
- *               energyConsumedWh: { type: number, minimum: 0 }
- *               recordedAt: { type: string, format: date-time, description: "Defaults to now if omitted" }
+ *               temperatureC: { type: number, description: "Temperature reading in Celsius" }
+ *               humidityPercent: { type: number, minimum: 0, maximum: 100, description: "Relative humidity, 0-100" }
  *           example:
- *             unit: "6a902454481962452192348c"
- *             temperatureC: 19.4
- *             ambientC: 35.9
- *             evaporatorInC: 20.5
- *             evaporatorOutC: 12.2
- *             leftInsideC: 19.4
- *             rightInsideC: 20.4
- *             leftMiddleC: 19
- *             rightMiddleC: 21.5
- *             leftNearDoorC: 17.5
- *             rightNearDoorC: 12
- *             batteryPercent: 82
- *             solarInputWatts: 140
- *             energyConsumedWh: 18.4
+ *             unit: "6a90219bf8ad0f55472bf900"
+ *             temperatureC: 16
+ *             humidityPercent: 88
  *     responses:
  *       201:
  *         description: Reading stored
  *       400:
- *         description: Validation failed (missing unit/temperatureC)
+ *         description: Validation failed (missing unit/temperatureC/humidityPercent)
  *         content:
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ApiErrorResponse' }
@@ -95,6 +67,7 @@ router.post(
   [
     body("unit").isMongoId().withMessage("A valid unit id is required"),
     body("temperatureC").isFloat().withMessage("temperatureC is required"),
+    body("humidityPercent").isFloat({ min: 0, max: 100 }).withMessage("humidityPercent must be 0-100"),
     ...PROBE_FIELDS.map((field) => body(field).optional().isFloat().withMessage(`${field} must be a number`)),
   ],
   validate,

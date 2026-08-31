@@ -29,6 +29,11 @@ import { dailyRateKoboForWeight } from "../constants/billing";
 // Kept in sync with client/src/testCredentials.ts — change one, change the other.
 const TEST_PASSWORD = "Soltech@2026";
 
+// Fixed so the id is stable across seed runs — the `@swagger` examples for
+// POST /telemetry (and /humidity) hardcode it so "Execute as-is" works after
+// any `npm run seed`. Keep these three in sync.
+const SEED_UNIT_ID = "6a90219bf8ad0f55472bf900";
+
 const SEED_USERS = [
   { name: "Ada Admin", email: "admin@soltech.test", role: "admin" as const },
   { name: "Sam Staff", email: "staff@soltech.test", role: "staff" as const },
@@ -98,6 +103,7 @@ async function seed() {
   });
 
   const unit = await CoolingUnit.create({
+    _id: new mongoose.Types.ObjectId(SEED_UNIT_ID),
     hub: hub._id,
     unitCode: "TRL-001",
     type: "mobile_trailer",

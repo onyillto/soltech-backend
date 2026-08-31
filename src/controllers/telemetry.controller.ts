@@ -25,6 +25,7 @@ const create = asyncHandler(async (req: Request, res: Response) => {
     unit: req.body.unit,
     recordedAt: req.body.recordedAt ?? new Date(),
     temperatureC: req.body.temperatureC,
+    humidityPercent: req.body.humidityPercent,
     ambientC: req.body.ambientC,
     evaporatorInC: req.body.evaporatorInC,
     evaporatorOutC: req.body.evaporatorOutC,

@@ -15,8 +15,8 @@ const router = Router();
  *
  *       humidityPercent is relative humidity, 0-100.
  *
- *       Example uses a live unit (TRL-001, Garki hub) — Execute as-is
- *       returns 201. Update the id if that unit is ever recreated.
+ *       The example id is the seeded unit (TRL-001) — Execute as-is returns
+ *       201 after `npm run seed`.
  *     tags: [Humidity]
  *     requestBody:
  *       required: true
@@ -30,7 +30,7 @@ const router = Router();
  *               humidityPercent: { type: number, minimum: 0, maximum: 100 }
  *               recordedAt: { type: string, format: date-time, description: "Defaults to now if omitted" }
  *           example:
- *             unit: "6a902454481962452192348c"
+ *             unit: "6a90219bf8ad0f55472bf900"
  *             humidityPercent: 88
  *     responses:
  *       201:
