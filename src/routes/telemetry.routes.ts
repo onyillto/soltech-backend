@@ -18,8 +18,9 @@ const router = Router();
  *       Sustained high temperature with active produce in the unit raises
  *       an Alert.
  *
- *       The example id is the seeded unit (TRL-001) — Execute as-is returns
- *       201 after `npm run seed`.
+ *       **Registered unit id: `6a90219bf8ad0f55472bf900`** (TRL-001, Garki
+ *       hub) — use this value for `unit`. It's seeded by `npm run seed` and
+ *       fixed, so Execute-as-is on the example below returns 201.
  *     tags: [Telemetry]
  *     requestBody:
  *       required: true
@@ -29,7 +30,7 @@ const router = Router();
  *             type: object
  *             required: [unit, temperatureC, humidityPercent]
  *             properties:
- *               unit: { type: string, description: "Cooling unit id" }
+ *               unit: { type: string, description: "Cooling unit id — use the registered id 6a90219bf8ad0f55472bf900 (TRL-001)" }
  *               temperatureC: { type: number, description: "Temperature reading in Celsius" }
  *               humidityPercent: { type: number, minimum: 0, maximum: 100, description: "Relative humidity, 0-100" }
  *           example:
