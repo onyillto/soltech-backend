@@ -13,7 +13,6 @@ async function start() {
     console.log(`[server] received ${signal}, shutting down`);
     server.close(() => process.exit(0));
   };
-
   process.on("SIGINT", () => shutdown("SIGINT"));
   process.on("SIGTERM", () => shutdown("SIGTERM"));
 }

@@ -92,40 +92,4 @@ const options: swaggerJsdoc.Options = {
   apis: [path.join(__dirname, "../routes/*.ts"), path.join(__dirname, "../routes/*.js")],
 };
 
-const fullSpec = swaggerJsdoc(options) as {
-  paths?: Record<string, Record<string, unknown>>;
-  tags?: { name: string }[];
-  [key: string]: unknown;
-};
-
-/**
- * The client only contracted for `POST /telemetry`, so the published docs
- * expose that one operation and nothing else. Every other route still works
- * if called directly — it's just not advertised here. To surface more later,
- * add its `path:method` to EXPOSED_OPERATIONS.
- */
-const EXPOSED_OPERATIONS: Record<string, string[]> = {
-  "/telemetry": ["post"],
-};
-
-const paths: Record<string, Record<string, unknown>> = {};
-for (const [routePath, methods] of Object.entries(EXPOSED_OPERATIONS)) {
-  const source = fullSpec.paths?.[routePath];
-  if (!source) continue;
-  paths[routePath] = {};
-  for (const method of methods) {
-    if (source[method]) paths[routePath][method] = source[method];
-  }
-}
-
-const exposedTags = new Set(
-  Object.values(paths)
-    .flatMap((methods) => Object.values(methods) as { tags?: string[] }[])
-    .flatMap((op) => op.tags ?? [])
-);
-
-export const swaggerSpec = {
-  ...fullSpec,
-  paths,
-  tags: (fullSpec.tags ?? []).filter((tag) => exposedTags.has(tag.name)),
-};
+export const swaggerSpec = swaggerJsdoc(options);
