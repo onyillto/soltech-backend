@@ -19,6 +19,10 @@ const options: swaggerJsdoc.Options = {
         "Send the JWT from /auth/login or /auth/admin/login as `Authorization: Bearer <token>`.",
     },
     servers: [
+      // Relative — Swagger UI resolves it against the docs page's own origin,
+      // so "Try it out" hits whatever host is serving the docs (Vercel, the
+      // Droplet, or localhost) without needing PUBLIC_API_URL set.
+      { url: "/api/v1", description: "This host" },
       ...(env.publicApiUrl ? [{ url: env.publicApiUrl, description: "Production" }] : []),
       { url: `http://localhost:${env.port}/api/v1`, description: "Local" },
     ],
