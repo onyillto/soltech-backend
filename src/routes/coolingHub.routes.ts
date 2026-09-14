@@ -13,7 +13,7 @@ router.get("/:id", coolingHubController.getOne);
 
 router.post(
   "/",
-  authorize("admin", "staff"),
+  authorize("admin", "operator"),
   [
     body("name").trim().notEmpty().withMessage("Name is required"),
     body("community").trim().notEmpty().withMessage("Community is required"),
@@ -23,17 +23,17 @@ router.post(
   coolingHubController.create
 );
 
-router.patch("/:id", authorize("admin", "staff"), coolingHubController.update);
+router.patch("/:id", authorize("admin", "operator"), coolingHubController.update);
 
 /**
  * @swagger
  * /cooling-hubs/{id}/assign:
  *   patch:
- *     summary: Assign a hub to an admin or staff user
+ *     summary: Assign a hub to an admin or operator user
  *     description: >
  *       They become "in control" of the hub, and the fallback recipient for
  *       cold-chain temperature alerts on its units. Admin only. The target
- *       user must have role admin or staff.
+ *       user must have role admin or operator.
  *     tags: [Cooling Hubs]
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -49,10 +49,10 @@ router.patch("/:id", authorize("admin", "staff"), coolingHubController.update);
  *             type: object
  *             required: [userId]
  *             properties:
- *               userId: { type: string, description: "Id of the admin/staff user to assign" }
+ *               userId: { type: string, description: "Id of the admin/operator user to assign" }
  *     responses:
  *       200: { description: Hub assigned }
- *       400: { description: Target user isn't admin/staff, or invalid input }
+ *       400: { description: Target user isn't admin/operator, or invalid input }
  *       404: { description: Hub or user not found }
  */
 router.patch(

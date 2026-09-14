@@ -7,10 +7,10 @@ export interface IBasketRentalItem {
   quantityKg: number;
 }
 
-/** A pay-per-use occupation of a basket by a farmer/trader, billed at a daily rate. */
+/** A pay-per-use occupation of a basket by a client, billed at a daily rate. */
 export interface IBasketRental extends Document {
   basket: Types.ObjectId;
-  renter: Types.ObjectId;
+  client: Types.ObjectId;
   /** Every produce item loaded into the basket for this rental (weighed on the client's scale). */
   items: IBasketRentalItem[];
   /** Sum of items[].quantityKg — kept denormalized since it drives capacity checks, pricing, and reporting. */
@@ -37,7 +37,7 @@ const basketRentalItemSchema = new Schema<IBasketRentalItem>(
 const basketRentalSchema = new Schema<IBasketRental>(
   {
     basket: { type: Schema.Types.ObjectId, ref: "Basket", required: true },
-    renter: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    client: { type: Schema.Types.ObjectId, ref: "Client", required: true },
     items: {
       type: [basketRentalItemSchema],
       required: true,

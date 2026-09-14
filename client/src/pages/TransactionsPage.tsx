@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useAuth } from "../state/AuthContext";
 import { useResource } from "../lib/useResource";
 import { BasketRentalsApi } from "../api/resources";
 import { Badge, PageHeader, Panel, Spinner, StatCard } from "../components/ui";
@@ -26,40 +25,27 @@ function formatBucketDate(isoDate: string): string {
   return d.toLocaleDateString("en-NG", { day: "2-digit", month: "short" });
 }
 
-function transactionColumns(canManage: boolean): Column<BasketRental>[] {
-  const columns: Column<BasketRental>[] = [
+function transactionColumns(): Column<BasketRental>[] {
+  return [
     { header: "Produce", render: (r) => formatItems(r.items) },
     { header: "Total kg", render: (r) => `${r.totalQuantityKg}kg` },
     { header: "Basket", render: (r) => refName(r.basket) },
-  ];
-
-  if (canManage) {
-    columns.push({ header: "Renter", render: (r) => refName(r.renter) });
-  }
-
-  columns.push(
+    { header: "Client", render: (r) => refName(r.client) },
     { header: "Started", render: (r) => formatDate(r.startAt) },
     {
       header: "Bill",
       render: (r) =>
         r.status === "active" ? `${formatNaira(r.estimatedAmountDueKobo)} est.` : formatNaira(r.amountDueKobo),
     },
-    { header: "Status", render: (r) => <Badge tone={rentalTone(r.status)}>{r.status}</Badge> }
-  );
-
-  return columns;
+    { header: "Status", render: (r) => <Badge tone={rentalTone(r.status)}>{r.status}</Badge> },
+  ];
 }
 
 export function TransactionsPage() {
-  const { user } = useAuth();
-  const canManage = user?.role === "admin" || user?.role === "staff";
   const [days, setDays] = useState(30);
 
   const summaryRes = useResource(() => BasketRentalsApi.summary(days), [days]);
-  const rentalsRes = useResource(
-    () => (canManage ? BasketRentalsApi.list({}) : BasketRentalsApi.list({ renter: user?._id })),
-    [canManage, user?._id]
-  );
+  const rentalsRes = useResource(() => BasketRentalsApi.list({}), []);
 
   const totals = summaryRes.data?.data.totals;
   const daily = summaryRes.data?.data.daily ?? [];
@@ -124,7 +110,7 @@ export function TransactionsPage() {
       )}
 
       <div className="section">
-        <Panel title={canManage ? "All transactions" : "Your transactions"}>
+        <Panel title="All transactions">
           {rentalsRes.loading ? (
             <Spinner />
           ) : (
@@ -132,7 +118,7 @@ export function TransactionsPage() {
               rows={rentalsRes.data?.data ?? []}
               rowKey={(r) => r._id}
               emptyText="Nothing recorded yet."
-              columns={transactionColumns(canManage)}
+              columns={transactionColumns()}
             />
           )}
         </Panel>

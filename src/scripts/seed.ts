@@ -1,8 +1,9 @@
 /**
  * Local dev/test seed: wipes the connected database and repopulates it with
- * one user per role, a sample cold-chain site, baskets, a rental, cold-box
- * logs, and a course — then writes TEST_CREDENTIALS.md to the repo root so
- * the login credentials don't have to be hunted down in this file.
+ * an admin + operator account, a sample cold-chain site, baskets, a few
+ * clients, a rental, cold-box logs, and telemetry — then writes
+ * TEST_CREDENTIALS.md to the repo root so the login credentials don't have
+ * to be hunted down in this file.
  *
  * Run with: npm run seed
  * Refuses to run when NODE_ENV=production.
@@ -14,6 +15,7 @@ import { connectDB } from "../config/db";
 import { env } from "../config/env";
 import { User } from "../models/User";
 import { Organization } from "../models/Organization";
+import { Client } from "../models/Client";
 import { CoolingHub } from "../models/CoolingHub";
 import { CoolingUnit } from "../models/CoolingUnit";
 import { Basket } from "../models/Basket";
@@ -21,9 +23,6 @@ import { BasketRental } from "../models/BasketRental";
 import { Payment } from "../models/Payment";
 import { ColdBoxLog } from "../models/ColdBoxLog";
 import { TelemetryReading } from "../models/TelemetryReading";
-import { Course } from "../models/Course";
-import { Module } from "../models/Module";
-import { Enrollment } from "../models/Enrollment";
 import { dailyRateKoboForWeight } from "../constants/billing";
 
 // Kept in sync with client/src/testCredentials.ts — change one, change the other.
@@ -36,11 +35,13 @@ const SEED_UNIT_ID = "6a902454481962452192348c";
 
 const SEED_USERS = [
   { name: "Ada Admin", email: "admin@soltech.test", role: "admin" as const },
-  { name: "Sam Staff", email: "staff@soltech.test", role: "staff" as const },
-  { name: "Farida Farmer", email: "farmer@soltech.test", role: "farmer" as const },
-  { name: "Maryam Market", email: "marketwoman@soltech.test", role: "market_woman" as const },
-  { name: "Tunde Trader", email: "trader@soltech.test", role: "trader" as const },
-  { name: "Lola Learner", email: "learner@soltech.test", role: "learner" as const },
+  { name: "Sam Operator", email: "operator@soltech.test", role: "operator" as const },
+];
+
+const SEED_CLIENTS = [
+  { name: "Farida Farmer", phone: "+2348011111111" },
+  { name: "Maryam Market", phone: "+2348022222222" },
+  { name: "Tunde Trader", phone: "+2348033333333" },
 ];
 
 async function seed() {
@@ -55,6 +56,7 @@ async function seed() {
   await Promise.all([
     User.deleteMany({}),
     Organization.deleteMany({}),
+    Client.deleteMany({}),
     CoolingHub.deleteMany({}),
     CoolingUnit.deleteMany({}),
     Basket.deleteMany({}),
@@ -62,9 +64,6 @@ async function seed() {
     Payment.deleteMany({}),
     ColdBoxLog.deleteMany({}),
     TelemetryReading.deleteMany({}),
-    Course.deleteMany({}),
-    Module.deleteMany({}),
-    Enrollment.deleteMany({}),
   ]);
 
   console.log("[seed] creating users...");
@@ -78,7 +77,7 @@ async function seed() {
       location: { community: "Garki", state: "FCT", country: "Nigeria" },
     }))
   );
-  const [admin, staff, farmer, marketWoman, trader, learner] = users;
+  const [admin, operator] = users;
 
   console.log("[seed] creating organization...");
   const org = await Organization.create({
@@ -86,10 +85,22 @@ async function seed() {
     type: "market_association",
     community: "Garki",
     state: "FCT",
-    contactPerson: staff._id,
+    contactPerson: operator._id,
     memberCount: 3,
   });
-  await User.updateMany({ _id: { $in: [staff._id, farmer._id, marketWoman._id] } }, { organization: org._id });
+  await User.updateMany({ _id: operator._id }, { organization: org._id });
+
+  console.log("[seed] creating clients...");
+  const clients = await Client.insertMany(
+    SEED_CLIENTS.map((c) => ({
+      name: c.name,
+      phone: c.phone,
+      organization: org._id,
+      location: { community: "Garki", state: "FCT", country: "Nigeria" },
+      createdBy: operator._id,
+    }))
+  );
+  const [farmer] = clients;
 
   console.log("[seed] creating cold-chain site...");
   const hub = await CoolingHub.create({
@@ -99,7 +110,7 @@ async function seed() {
     state: "FCT",
     energySource: "solar",
     status: "operational",
-    managedBy: staff._id,
+    managedBy: operator._id,
   });
 
   const unit = await CoolingUnit.create({
@@ -121,7 +132,7 @@ async function seed() {
   console.log("[seed] creating a sample rental + payment...");
   const rental = await BasketRental.create({
     basket: basketDocs[0]._id,
-    renter: farmer._id,
+    client: farmer._id,
     items: [
       { produceType: "Tomatoes", quantityKg: 12 },
       { produceType: "Pepper", quantityKg: 6 },
@@ -136,7 +147,7 @@ async function seed() {
     amountKobo: 40000,
     method: "cash",
     status: "paid",
-    recordedBy: staff._id,
+    recordedBy: operator._id,
   });
 
   console.log("[seed] creating cold-box logs...");
@@ -148,7 +159,7 @@ async function seed() {
       quantityKg: 450,
       crateSizeKg: 25,
       occurredAt: new Date(Date.now() - 18 * 60 * 60 * 1000),
-      loggedBy: staff._id,
+      loggedBy: operator._id,
     },
     {
       unit: unit._id,
@@ -158,7 +169,7 @@ async function seed() {
       crateSizeKg: 25,
       doorOpenSeconds: 143,
       occurredAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
-      loggedBy: staff._id,
+      loggedBy: operator._id,
     },
   ]);
 
@@ -174,26 +185,6 @@ async function seed() {
     }))
   );
 
-  console.log("[seed] creating a course + modules + enrollment...");
-  const course = await Course.create({
-    title: "Solar Cold Chain Basics",
-    description: "An introduction to operating and maintaining a solar-powered cold basket unit.",
-    category: "sustainable_cooling",
-    level: "beginner",
-    durationHours: 6,
-    instructor: staff._id,
-    isPublished: true,
-  });
-  const modules = await Module.insertMany([
-    { course: course._id, title: "Intro to Solar Cooling", content: "How PV + battery cooling works.", order: 1 },
-    { course: course._id, title: "Maintaining a Cold Basket", content: "Daily checks and cleaning.", order: 2 },
-  ]);
-  const enrollment = await Enrollment.create({ learner: learner._id, course: course._id });
-  await Enrollment.findByIdAndUpdate(enrollment._id, {
-    $push: { completedModules: modules[0]._id },
-    progressPercent: 50,
-  });
-
   const credentialsPath = path.join(__dirname, "../../TEST_CREDENTIALS.md");
   const lines = [
     "# SOLTECH Hub — Test Credentials",
@@ -204,12 +195,19 @@ async function seed() {
     "|---|---|---|",
     ...SEED_USERS.map((u) => `| ${u.role} | ${u.email} | ${TEST_PASSWORD} |`),
     "",
+    "## Sample clients",
+    "",
+    "Clients don't log in — they're managed by an admin/operator through the API.",
+    "",
+    "| Name | Phone | Id |",
+    "|---|---|---|",
+    ...clients.map((c, i) => `| ${SEED_CLIENTS[i].name} | ${SEED_CLIENTS[i].phone} | \`${c._id}\` |`),
+    "",
     "## Sample data",
     "",
     `- Organization: Garki Ultra-Modern Market Traders Association (\`${org._id}\`)`,
     `- Cooling unit: TRL-001 (\`${unit._id}\`), device key for telemetry testing (\`x-device-key\` header):`,
     `  \`${unitWithKey?.deviceKey}\``,
-    `- Course: Solar Cold Chain Basics (\`${course._id}\`) — learner is enrolled at 50% progress`,
     `- Basket #1 has an active rental by Farida Farmer (12kg tomatoes + 6kg pepper, 18kg total), with one ₦400 cash payment recorded`,
     "",
   ];

@@ -13,7 +13,7 @@ router.get("/:id", coldBoxLogController.getOne);
 
 router.post(
   "/",
-  authorize("admin", "staff"),
+  authorize("admin", "operator"),
   [
     body("unit").isMongoId().withMessage("A valid unit id is required"),
     body("eventType").isIn(["load", "unload"]).withMessage('eventType must be "load" or "unload"'),
@@ -28,7 +28,7 @@ router.post(
 
 router.post(
   "/bulk",
-  authorize("admin", "staff"),
+  authorize("admin", "operator"),
   [
     body("unit").isMongoId().withMessage("A valid unit id is required"),
     body("entries").isArray({ min: 1 }).withMessage("entries must be a non-empty array"),
@@ -37,7 +37,7 @@ router.post(
   coldBoxLogController.bulkCreate
 );
 
-router.patch("/:id", authorize("admin", "staff"), coldBoxLogController.update);
-router.delete("/:id", authorize("admin", "staff"), coldBoxLogController.remove);
+router.patch("/:id", authorize("admin", "operator"), coldBoxLogController.update);
+router.delete("/:id", authorize("admin", "operator"), coldBoxLogController.remove);
 
 export default router;

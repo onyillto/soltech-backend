@@ -19,20 +19,6 @@ function toPublicUser(user: InstanceType<typeof User>) {
   };
 }
 
-export const register = asyncHandler(async (req: Request, res: Response) => {
-  const { name, email, password, phone, role, organization, location } = req.body;
-
-  const existing = await User.findOne({ email });
-  if (existing) {
-    throw ApiError.conflict("An account with this email already exists");
-  }
-
-  const user = await User.create({ name, email, password, phone, role, organization, location });
-  const token = signToken({ sub: user.id, role: user.role });
-
-  res.status(201).json({ success: true, data: { user: toPublicUser(user), token } });
-});
-
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const { email, password } = req.body;
 

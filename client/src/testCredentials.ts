@@ -9,9 +9,5 @@ export const TEST_PASSWORD = "Soltech@2026";
 
 export const SEEDED_USERS: { role: Role; label: string; email: string }[] = [
   { role: "admin", label: "Admin", email: "admin@soltech.test" },
-  { role: "staff", label: "Staff", email: "staff@soltech.test" },
-  { role: "farmer", label: "Farmer", email: "farmer@soltech.test" },
-  { role: "market_woman", label: "Market Woman", email: "marketwoman@soltech.test" },
-  { role: "trader", label: "Trader", email: "trader@soltech.test" },
-  { role: "learner", label: "Learner", email: "learner@soltech.test" },
+  { role: "operator", label: "Operator", email: "operator@soltech.test" },
 ];

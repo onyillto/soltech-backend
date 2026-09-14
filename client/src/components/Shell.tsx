@@ -15,7 +15,7 @@ export function Shell() {
           <Logo />
           <div>
             <span className="brand-name">SOLTECH</span>
-            <span className="brand-tag">Cold Chain &amp; VET Hub</span>
+            <span className="brand-tag">Cold Chain Hub</span>
           </div>
         </div>
 

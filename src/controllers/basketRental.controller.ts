@@ -2,16 +2,16 @@ import { Request, Response } from "express";
 import { crudFactory } from "../utils/crudFactory";
 import { BasketRental, IBasketRentalItem } from "../models/BasketRental";
 import { Basket } from "../models/Basket";
+import { Client } from "../models/Client";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiError } from "../utils/ApiError";
-import { assertOwnerOrPrivileged } from "../utils/ownership";
 import { dailyRateKoboForWeight } from "../constants/billing";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 const base = crudFactory(BasketRental, {
-  populate: "basket renter",
-  filterableFields: ["basket", "renter", "status"],
+  populate: "basket client",
+  filterableFields: ["basket", "client", "status"],
 });
 
 /** Days elapsed since start, billed as whole days (any partial day counts as a full day). */
@@ -25,6 +25,9 @@ const create = asyncHandler(async (req: Request, res: Response) => {
   if (!basket) throw ApiError.notFound("Basket not found");
   if (basket.status !== "available") throw ApiError.conflict("This basket is not available");
 
+  const client = await Client.exists({ _id: req.body.client });
+  if (!client) throw ApiError.notFound("Client not found");
+
   const items: IBasketRentalItem[] = req.body.items ?? [];
   const totalQuantityKg = items.reduce((sum, item) => sum + Number(item.quantityKg || 0), 0);
 
@@ -34,12 +37,9 @@ const create = asyncHandler(async (req: Request, res: Response) => {
     );
   }
 
-  const canActOnBehalf = req.user?.role === "admin" || req.user?.role === "staff";
-  const renter = canActOnBehalf && req.body.renter ? req.body.renter : req.user?.id;
-
   const rental = await BasketRental.create({
     basket: basket.id,
-    renter,
+    client: req.body.client,
     items,
     totalQuantityKg,
     startAt: req.body.startAt ?? new Date(),
@@ -55,7 +55,7 @@ const create = asyncHandler(async (req: Request, res: Response) => {
 
 /** Adds a live billing estimate for still-open rentals rather than persisting a moving target. */
 const getOne = asyncHandler(async (req: Request, res: Response) => {
-  const rental = await BasketRental.findById(req.params.id).populate("basket renter");
+  const rental = await BasketRental.findById(req.params.id).populate("basket client");
   if (!rental) throw ApiError.notFound("Rental not found");
 
   const data = rental.toObject();
@@ -74,7 +74,6 @@ const getOne = asyncHandler(async (req: Request, res: Response) => {
 const close = asyncHandler(async (req: Request, res: Response) => {
   const rental = await BasketRental.findById(req.params.id);
   if (!rental) throw ApiError.notFound("Rental not found");
-  assertOwnerOrPrivileged(req, rental.renter);
   if (rental.status !== "active") throw ApiError.badRequest("This rental is already closed");
 
   const endAt = req.body.endAt ? new Date(req.body.endAt) : new Date();

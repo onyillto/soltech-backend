@@ -1,9 +1,8 @@
 # SOLTECH Hub — Backend
 
-Backend API for **SOLTECH Hub**: AI-enabled Vocational Education Training (VET) in
-sustainable cooling, and off-grid cold-chain energy access for smallholder farmers,
-market women, and traders in local farming communities in Nigeria — supporting SDG 2
-(zero hunger / food security) and SDG 7 (affordable, clean energy).
+Backend API for **SOLTECH Hub**: off-grid cold-chain energy access for smallholder
+farmers, market women, and traders in local farming communities in Nigeria —
+supporting SDG 2 (zero hunger / food security) and SDG 7 (affordable, clean energy).
 
 ## Stack
 
@@ -13,13 +12,16 @@ market women, and traders in local farming communities in Nigeria — supporting
 
 ## Domains covered
 
-- **Users & organizations** — accounts for admins, staff, farmers, market women,
-  traders, and learners; cooperatives/community groups/training centers.
+- **Users & organizations** — login accounts for admins and operators only;
+  cooperatives/community groups/training centers.
+- **Clients** — farmers, market women, and traders who place produce into cold
+  storage. Not login accounts — an admin/operator registers and manages each
+  client's record on their behalf.
 - **Cold-chain tracking** — off-grid cooling hubs, individual cooling units (including
   mobile solar trailers), and cold-box load/unload logs (produce type, kg, crate size,
   door-opening duration), matching the field data sheets used to record cold-box activity.
 - **Basket rentals & billing** — the pay-per-use model from the investor deck: modular
-  cold baskets inside a unit, rented by farmers/traders at a weight-tiered daily rate
+  cold baskets inside a unit, rented by clients at a weight-tiered daily rate
   (₦200/day up to 10kg, +₦100/day per additional 10kg — see `constants/billing.ts`),
   with payment records against each rental.
 - **IoT telemetry** — readings ingested from a device on each unit. `POST /telemetry` is
@@ -29,8 +31,6 @@ market women, and traders in local farming communities in Nigeria — supporting
   reading; nine optional named probes (`ambientC`, `evaporatorInC`/`evaporatorOutC`, and
   six storage-compartment positions) match the real multi-point thermocouple rig used for
   cold-box validation — a simpler single-probe sensor can still report with just `temperatureC`.
-- **VET training & learning outcomes** — courses, modules, and enrollments with
-  progress tracking toward course completion.
 
 ## Getting started
 
@@ -50,12 +50,11 @@ npm start        # run the compiled build
 
 ## Test data & the client console
 
-`npm run seed` wipes the connected database and creates one user per role (admin,
-staff, farmer, market_woman, trader, learner — all with password `Soltech@2026`),
-plus a sample cold-chain site, baskets, an active rental with a payment, cold-box
-logs, telemetry readings, and a course with an enrollment in progress. It writes
-the full credential list to `TEST_CREDENTIALS.md` in the repo root (gitignored,
-regenerate any time by re-running the seed).
+`npm run seed` wipes the connected database and creates one login account per role
+(admin, operator — both with password `Soltech@2026`), a few sample clients, plus a
+sample cold-chain site, baskets, an active rental with a payment, cold-box logs, and
+telemetry readings. It writes the full credential list to `TEST_CREDENTIALS.md` in
+the repo root (gitignored, regenerate any time by re-running the seed).
 
 ```bash
 npm run seed
@@ -100,9 +99,10 @@ npm run create-admin -- --name="Ada Admin" --email=admin@soltech.example --passw
 ```
 
 The main admin is the fallback recipient for cold-chain alerts on any hub
-that hasn't been assigned to a specific admin/staff yet (see `PATCH
-/cooling-hubs/:id/assign` below). Additional admins beyond the main one are
-created by an existing admin, not by this script.
+that hasn't been assigned to a specific admin/operator yet (see `PATCH
+/cooling-hubs/:id/assign` below). Additional admin/operator accounts beyond
+the main one are created via `POST /users` by an existing admin, not by
+this script.
 
 ### Cold-chain temperature monitoring
 
@@ -117,10 +117,11 @@ occupancy check). Only one open alert per unit at a time — a live incident
 doesn't spam a new alert on every subsequent reading. See `/alerts` below.
 
 A React + Vite console that consumes this whole API lives in [client/](client) —
-role-aware navigation, cold-chain site/unit management, basket rentals & billing,
-telemetry (with a "simulate a device reading" panel, since real hardware isn't
-required to test it), payments, and VET training. See [client/README.md](client/README.md)
-to run it; the login screen has one-click quick-fill buttons for each seeded account.
+client registration, basket rentals & billing, and transactions, with the rest
+of the domains (cold-chain site/unit management, telemetry, payments, user
+management) fully working on the API but not yet wired into the console. See
+[client/README.md](client/README.md) to run it; the login screen has one-click
+quick-fill buttons for each seeded account.
 
 ## API
 
@@ -133,30 +134,28 @@ The UI page (`src/config/swaggerHtml.ts`) loads Swagger UI's JS/CSS from a CDN
 rather than serving it locally — `swagger-ui-express`'s usual local static
 files don't survive a serverless deploy's dependency tracing (Vercel), so this
 works the same way everywhere instead of only on the Droplet. Currently `/auth`, `/alerts`,
-`/cooling-hubs/:id/assign`, `/baskets/available`+`/baskets/bulk`, `/telemetry`, and
-`/humidity` are fully documented there; the rest of the table below follows the same
-pattern whenever it's worth adding.
+`/cooling-hubs/:id/assign`, `/baskets/available`+`/baskets/bulk`, `/telemetry`,
+`/humidity`, `POST /users`, and `POST /clients` are fully documented there; the rest
+of the table below follows the same pattern whenever it's worth adding.
 
 | Resource | Base path | Notes |
 |---|---|---|
-| Auth | `/auth` | `POST /register` (self-service roles only — farmer, market_woman, trader, learner), `POST /login` (any role), `POST /admin/login` (admin only — a non-admin account or wrong password both return the same generic error), `GET /me` |
-| Users | `/users` | admin/staff list; self or admin read/update/delete |
+| Auth | `/auth` | No self-registration — `POST /login` (admin or operator), `POST /admin/login` (admin only — a non-admin account or wrong password both return the same generic error), `GET /me` |
+| Users | `/users` | admin/operator accounts only. `POST /` (admin only) creates an admin/operator account — the only in-app way to provision one; list/read admin+operator, update/delete admin only |
+| Clients | `/clients` | farmers/market women/traders who place produce into storage — no login, managed by an admin/operator; list/read/create/update admin+operator, delete admin only |
 | Organizations | `/organizations` | cooperatives, community groups, training centers |
-| Cooling hubs | `/cooling-hubs` | off-grid cold-chain hub sites; `PATCH /:id/assign` (admin only) assigns a hub to an admin/staff user — they become the alert recipient for its units |
-| Alerts | `/alerts` | admin/staff only, system-generated (see Cold-chain temperature monitoring above) — `GET /` (filter by `unit`/`status`), `GET /:id`, `PATCH /:id/acknowledge` |
+| Cooling hubs | `/cooling-hubs` | off-grid cold-chain hub sites; `PATCH /:id/assign` (admin only) assigns a hub to an admin/operator user — they become the alert recipient for its units |
+| Alerts | `/alerts` | admin/operator only, system-generated (see Cold-chain temperature monitoring above) — `GET /` (filter by `unit`/`status`), `GET /:id`, `PATCH /:id/acknowledge` |
 | Cooling units | `/cooling-units` | individual units within a hub; `PATCH /:id/rotate-device-key` reissues the IoT device secret |
 | Cold-box logs | `/cold-box-logs` | `POST` for a single load/unload event, `POST /bulk` to import a batch (accepts either structured fields or the raw `occurredAtRaw`/`doorOpenRaw` strings from the field sheets) |
 | Baskets | `/baskets` | individual cold baskets within a unit; `GET /available` (optionally `?unit=`) for baskets ready to rent; `POST /bulk` provisions every basket for a unit at once (`count` defaults to the unit's `basketCapacity`, e.g. 110 — idempotent, safe to re-run) |
-| Basket rentals | `/basket-rentals` | `POST` to start a rental (basket must be `available`; `items: [{produceType, quantityKg}]` — one or more produce entries, total capped at the basket's `capacityKg`) — the daily rate is auto-computed from total weight unless overridden; `PATCH /:id/close` to end it and compute the bill; `GET /:id` on an open rental includes a live `estimatedAmountDueKobo`; `GET /summary?days=30` returns totals + a daily transaction/weight/revenue series for reporting |
-| Payments | `/payments` | records a payment (cash/transfer/mobile money/card) against a rental — admin/staff only |
+| Basket rentals | `/basket-rentals` | `POST` to start a rental on behalf of a client (basket must be `available`; `items: [{produceType, quantityKg}]` — one or more produce entries, total capped at the basket's `capacityKg`) — the daily rate is auto-computed from total weight unless overridden; `PATCH /:id/close` to end it and compute the bill; `GET /:id` on an open rental includes a live `estimatedAmountDueKobo`; `GET /summary?days=30` returns totals + a daily transaction/weight/revenue series for reporting |
+| Payments | `/payments` | records a payment (cash/transfer/mobile money/card) against a rental — admin/operator only |
 | Telemetry | `/telemetry` | `POST` ingests a reading — **fully public, no auth at all** (only checks the unit id is real); `GET` endpoints (list/latest/summary) still require a normal user login |
 | Humidity | `/humidity` | A standalone humidity sensor, not the same device/reading as temperature — its own model/endpoint. **Fully public, no login anywhere on this router** (unlike `/telemetry`, whose `GET`s still need one) — every route just needs a valid unit id. `humidityPercent` (0-100) only |
-| Courses | `/courses` | VET course catalog |
-| Modules | `/modules` | lessons within a course |
-| Enrollments | `/enrollments` | `POST` to enroll, `PATCH /:id/complete-module` to record progress |
 
-Send the JWT from login/register as `Authorization: Bearer <token>` on subsequent
-requests. Roles: `admin`, `staff`, `farmer`, `market_woman`, `trader`, `learner`.
+Send the JWT from login as `Authorization: Bearer <token>` on subsequent
+requests. Roles: `admin`, `operator`.
 
 ## Project structure
 
@@ -183,8 +182,7 @@ This is a working scaffold, not a finished product. Reasonable next additions:
 - Daily reconciliation reporting (total loaded vs. unloaded per cold-box per day,
   spoilage/loss estimates) — the field sheets note this by hand today; it can be
   computed from `ColdBoxLog` via an aggregation endpoint rather than stored per event.
-- File uploads for course resources and certificates.
-- Seed script + integration tests.
+- Integration tests.
 - Rate limiting on `/auth` endpoints (and on `/telemetry` ingestion — now more important
   than before, since that endpoint has no auth at all and rate limiting is the only
   remaining guard against someone hammering it or flooding fake readings).

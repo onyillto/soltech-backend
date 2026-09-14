@@ -10,9 +10,7 @@ import basketRentalRoutes from "./basketRental.routes";
 import paymentRoutes from "./payment.routes";
 import telemetryRoutes from "./telemetry.routes";
 import humidityRoutes from "./humidity.routes";
-import courseRoutes from "./course.routes";
-import moduleRoutes from "./module.routes";
-import enrollmentRoutes from "./enrollment.routes";
+import clientRoutes from "./client.routes";
 import alertRoutes from "./alert.routes";
 
 const router = Router();
@@ -30,9 +28,7 @@ router.use("/basket-rentals", basketRentalRoutes);
 router.use("/payments", paymentRoutes);
 router.use("/telemetry", telemetryRoutes);
 router.use("/humidity", humidityRoutes);
-router.use("/courses", courseRoutes);
-router.use("/modules", moduleRoutes);
-router.use("/enrollments", enrollmentRoutes);
+router.use("/clients", clientRoutes);
 router.use("/alerts", alertRoutes);
 
 export default router;

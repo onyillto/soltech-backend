@@ -13,7 +13,7 @@ router.get("/:id", coolingUnitController.getOne);
 
 router.post(
   "/",
-  authorize("admin", "staff"),
+  authorize("admin", "operator"),
   [
     body("hub").isMongoId().withMessage("A valid hub id is required"),
     body("unitCode").trim().notEmpty().withMessage("unitCode is required"),
@@ -26,8 +26,8 @@ router.post(
   coolingUnitController.create
 );
 
-router.patch("/:id", authorize("admin", "staff"), coolingUnitController.update);
-router.patch("/:id/rotate-device-key", authorize("admin", "staff"), coolingUnitController.rotateDeviceKey);
+router.patch("/:id", authorize("admin", "operator"), coolingUnitController.update);
+router.patch("/:id/rotate-device-key", authorize("admin", "operator"), coolingUnitController.rotateDeviceKey);
 router.delete("/:id", authorize("admin"), coolingUnitController.remove);
 
 export default router;

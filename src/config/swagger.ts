@@ -52,7 +52,7 @@ const options: swaggerJsdoc.Options = {
             phone: { type: "string", nullable: true },
             role: {
               type: "string",
-              enum: ["admin", "staff", "farmer", "market_woman", "trader", "learner"],
+              enum: ["admin", "operator"],
             },
             organization: { type: "string", nullable: true, description: "Organization id" },
             location: {

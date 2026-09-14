@@ -11,10 +11,10 @@ const base = crudFactory(CoolingHub, {
 });
 
 /**
- * Assigns a hub to a specific admin/staff user — they become "in control" of
- * it, and the fallback alert recipient for its units once monitoring is on.
- * A market woman/farmer/trader/learner can't be assigned; a hub is managed
- * by someone empowered to act on it, not by the person renting a basket.
+ * Assigns a hub to a specific admin/operator user — they become "in control"
+ * of it, and the fallback alert recipient for its units once monitoring is
+ * on. A client can't be assigned; a hub is managed by someone empowered to
+ * act on it, not by the person renting a basket.
  */
 const assign = asyncHandler(async (req: Request, res: Response) => {
   const hub = await CoolingHub.findById(req.params.id);
@@ -22,8 +22,8 @@ const assign = asyncHandler(async (req: Request, res: Response) => {
 
   const targetUser = await User.findById(req.body.userId);
   if (!targetUser) throw ApiError.notFound("User not found");
-  if (targetUser.role !== "admin" && targetUser.role !== "staff") {
-    throw ApiError.badRequest("A hub can only be assigned to an admin or staff user");
+  if (targetUser.role !== "admin" && targetUser.role !== "operator") {
+    throw ApiError.badRequest("A hub can only be assigned to an admin or operator user");
   }
 
   hub.managedBy = targetUser._id as typeof hub.managedBy;

@@ -32,7 +32,7 @@ router.get("/:id", basketController.getOne);
 
 router.post(
   "/",
-  authorize("admin", "staff"),
+  authorize("admin", "operator"),
   [
     body("unit").isMongoId().withMessage("A valid unit id is required"),
     body("basketNumber").isInt({ min: 1 }).withMessage("basketNumber must be a positive integer"),
@@ -73,7 +73,7 @@ router.post(
  */
 router.post(
   "/bulk",
-  authorize("admin", "staff"),
+  authorize("admin", "operator"),
   [
     body("unit").isMongoId().withMessage("A valid unit id is required"),
     body("count").optional().isInt({ min: 1, max: 500 }).withMessage("count must be between 1 and 500"),
@@ -83,7 +83,7 @@ router.post(
   basketController.bulkCreate
 );
 
-router.patch("/:id", authorize("admin", "staff"), basketController.update);
+router.patch("/:id", authorize("admin", "operator"), basketController.update);
 router.delete("/:id", authorize("admin"), basketController.remove);
 
 export default router;

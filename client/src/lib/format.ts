@@ -2,11 +2,7 @@ import type { BasketRentalItem, Role } from "../api/types";
 
 export const ROLE_LABELS: Record<Role, string> = {
   admin: "Admin",
-  staff: "Staff",
-  farmer: "Farmer",
-  market_woman: "Market Woman",
-  trader: "Trader",
-  learner: "Learner",
+  operator: "Operator",
 };
 
 export function formatNaira(kobo: number | null | undefined): string {

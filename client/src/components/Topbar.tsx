@@ -22,7 +22,7 @@ export function Topbar() {
     <div className="topbar">
       <div>
         <h1>SOLTECH Hub Console</h1>
-        <div className="subtitle">Off-grid cold chain &amp; VET training operations</div>
+        <div className="subtitle">Off-grid cold chain operations</div>
       </div>
       {status === "online" && <Badge tone="green">API connected</Badge>}
       {status === "offline" && <Badge tone="red">API unreachable</Badge>}

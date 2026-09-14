@@ -44,7 +44,7 @@ export function LoginPage() {
           <Logo size={40} />
           <div style={{ textAlign: "center" }}>
             <h2 style={{ color: "#f3f1e9" }}>SOLTECH Hub</h2>
-            <p style={{ color: "#a9b8ae", fontSize: "0.82rem" }}>Cold chain &amp; VET training console</p>
+            <p style={{ color: "#a9b8ae", fontSize: "0.82rem" }}>Cold chain console</p>
           </div>
         </div>
 

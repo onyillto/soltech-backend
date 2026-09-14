@@ -1,71 +1,10 @@
 import { Router } from "express";
 import { body } from "express-validator";
-import { adminLogin, login, me, register } from "../controllers/auth.controller";
+import { adminLogin, login, me } from "../controllers/auth.controller";
 import { validate } from "../middleware/validate";
 import { protect } from "../middleware/auth";
-import { SELF_SERVICE_ROLES } from "../constants/roles";
 
 const router = Router();
-
-/**
- * @swagger
- * /auth/register:
- *   post:
- *     summary: Register a new account
- *     description: >
- *       Self-service registration for farmers, market women, traders, and
- *       learners only. There is no public registration for admin or staff —
- *       those accounts are provisioned by an existing admin or the seed
- *       script, never through this endpoint.
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [name, email, password]
- *             properties:
- *               name: { type: string, example: "Amaka Trader" }
- *               email: { type: string, format: email, example: "amaka@example.com" }
- *               password: { type: string, format: password, minLength: 8, example: "a-strong-password" }
- *               phone: { type: string, example: "+2348012345678" }
- *               role:
- *                 type: string
- *                 enum: [farmer, market_woman, trader, learner]
- *                 default: learner
- *               organization: { type: string, description: "Organization id" }
- *     responses:
- *       201:
- *         description: Account created
- *         content:
- *           application/json:
- *             schema: { $ref: '#/components/schemas/AuthResponse' }
- *       400:
- *         description: Validation failed
- *         content:
- *           application/json:
- *             schema: { $ref: '#/components/schemas/ApiErrorResponse' }
- *       409:
- *         description: An account with this email already exists
- *         content:
- *           application/json:
- *             schema: { $ref: '#/components/schemas/ApiErrorResponse' }
- */
-router.post(
-  "/register",
-  [
-    body("name").trim().notEmpty().withMessage("Name is required"),
-    body("email").isEmail().withMessage("A valid email is required").normalizeEmail(),
-    body("password").isLength({ min: 8 }).withMessage("Password must be at least 8 characters"),
-    body("role")
-      .optional()
-      .isIn(SELF_SERVICE_ROLES)
-      .withMessage("Invalid role — admin/staff accounts aren't created through registration"),
-  ],
-  validate,
-  register
-);
 
 /**
  * @swagger
@@ -81,7 +20,7 @@ router.post(
  *             type: object
  *             required: [email, password]
  *             properties:
- *               email: { type: string, format: email, example: "farmer@soltech.test" }
+ *               email: { type: string, format: email, example: "operator@soltech.test" }
  *               password: { type: string, format: password, example: "Soltech@2026" }
  *     responses:
  *       200:

@@ -1,16 +1,15 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { useAuth } from "../state/AuthContext";
 import { useResource } from "../lib/useResource";
 import { useToast } from "../state/ToastContext";
-import { BasketRentalsApi, BasketsApi, CoolingUnitsApi } from "../api/resources";
+import { BasketRentalsApi, BasketsApi, ClientsApi, CoolingUnitsApi } from "../api/resources";
 import { DataTable, type Column } from "../components/DataTable";
 import { Badge, Field, PageHeader, Panel, Spinner } from "../components/ui";
 import { Modal } from "../components/Modal";
 import { ApiError } from "../api/client";
-import { formatDate, formatNaira, refId, refName } from "../lib/format";
+import { formatDate, formatNaira, refName } from "../lib/format";
 import { dailyRateNairaForWeight } from "../lib/pricing";
-import type { BasketRental } from "../api/types";
+import type { BasketRental, Client } from "../api/types";
 
 function basketTone(status: string) {
   if (status === "available") return "green" as const;
@@ -81,19 +80,29 @@ interface ItemRow {
 
 const EMPTY_ITEM: ItemRow = { produceType: "", quantityKg: "" };
 
-/** Starting a rental: pick an available basket, list every produce item going in (weighed
- * on the scale you already have), and see the price before confirming. */
+/** Starting a rental: pick an available basket, pick which client it's for, list every
+ * produce item going in (weighed on the scale you already have), and see the price
+ * before confirming. */
 function RentBasketModal({
   availableBaskets,
+  clients,
   onClose,
   onCreated,
+  onClientRegistered,
 }: {
   availableBaskets: { _id: string; basketNumber: number; capacityKg?: number }[];
+  clients: Client[];
   onClose: () => void;
   onCreated: () => void;
+  onClientRegistered: () => void;
 }) {
   const { notify } = useToast();
   const [basket, setBasket] = useState(availableBaskets[0]?._id ?? "");
+  const [client, setClient] = useState(clients[0]?._id ?? "");
+  const [addingClient, setAddingClient] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
+  const [registeringClient, setRegisteringClient] = useState(false);
   const [items, setItems] = useState<ItemRow[]>([{ ...EMPTY_ITEM }]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -103,7 +112,25 @@ function RentBasketModal({
   const dailyRateNaira = totalKg > 0 ? dailyRateNairaForWeight(totalKg) : 0;
 
   const hasValidItems = items.some((item) => item.produceType.trim() && Number(item.quantityKg) > 0);
-  const canConfirm = !!basket && hasValidItems && !overCapacity && !submitting;
+  const canConfirm = !!basket && !!client && hasValidItems && !overCapacity && !submitting;
+
+  async function registerClient() {
+    if (!newClientName.trim() || !newClientPhone.trim()) return;
+    setRegisteringClient(true);
+    try {
+      const res = await ClientsApi.create({ name: newClientName.trim(), phone: newClientPhone.trim() });
+      notify(`${res.data.name} registered`, "success");
+      onClientRegistered();
+      setClient(res.data._id);
+      setAddingClient(false);
+      setNewClientName("");
+      setNewClientPhone("");
+    } catch (err) {
+      notify(err instanceof ApiError ? err.message : "Failed to register client", "error");
+    } finally {
+      setRegisteringClient(false);
+    }
+  }
 
   function updateItem(index: number, patch: Partial<ItemRow>) {
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
@@ -122,10 +149,10 @@ function RentBasketModal({
       .filter((item) => item.produceType.trim() && Number(item.quantityKg) > 0)
       .map((item) => ({ produceType: item.produceType.trim(), quantityKg: Number(item.quantityKg) }));
 
-    if (!basket || payloadItems.length === 0) return;
+    if (!basket || !client || payloadItems.length === 0) return;
     setSubmitting(true);
     try {
-      const res = await BasketRentalsApi.create({ basket, items: payloadItems });
+      const res = await BasketRentalsApi.create({ basket, client, items: payloadItems });
       notify(`Rental started — ${formatNaira(res.data.rateKoboPerDay)}/day from now`, "success");
       onCreated();
       onClose();
@@ -162,6 +189,46 @@ function RentBasketModal({
           ))}
         </select>
       </Field>
+
+      {addingClient ? (
+        <div className="form-grid" style={{ marginTop: 12, gridTemplateColumns: "1fr 1fr" }}>
+          <Field label="New client name">
+            <input value={newClientName} onChange={(e) => setNewClientName(e.target.value)} placeholder="Farida Farmer" />
+          </Field>
+          <Field label="Phone">
+            <input value={newClientPhone} onChange={(e) => setNewClientPhone(e.target.value)} placeholder="+2348012345678" />
+          </Field>
+          <div style={{ display: "flex", gap: 8, gridColumn: "1 / -1" }}>
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              disabled={!newClientName.trim() || !newClientPhone.trim() || registeringClient}
+              onClick={registerClient}
+            >
+              {registeringClient ? "Registering…" : "Register & select"}
+            </button>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setAddingClient(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <Field label="Client">
+          <div style={{ display: "flex", gap: 8 }}>
+            <select value={client} onChange={(e) => setClient(e.target.value)} style={{ flex: 1 }}>
+              {clients.length === 0 && <option value="">No clients registered</option>}
+              {clients.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name} — {c.phone}
+                </option>
+              ))}
+            </select>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setAddingClient(true)}>
+              + New
+            </button>
+          </div>
+        </Field>
+      )}
 
       <div className="section-title" style={{ marginTop: 16 }}>
         Produce going in
@@ -222,12 +289,8 @@ function RentBasketModal({
   );
 }
 
-function rentalColumns(
-  canManage: boolean,
-  currentUserId: string | undefined,
-  onClose: (id: string) => void
-): Column<BasketRental>[] {
-  const columns: Column<BasketRental>[] = [
+function rentalColumns(onClose: (id: string) => void): Column<BasketRental>[] {
+  return [
     {
       header: "Produce",
       render: (r) => (
@@ -242,13 +305,7 @@ function rentalColumns(
     },
     { header: "Total kg", render: (r) => `${r.totalQuantityKg}kg` },
     { header: "Basket", render: (r) => refName(r.basket) },
-  ];
-
-  if (canManage) {
-    columns.push({ header: "Renter", render: (r) => refName(r.renter) });
-  }
-
-  columns.push(
+    { header: "Client", render: (r) => refName(r.client) },
     { header: "Started", render: (r) => formatDate(r.startAt) },
     {
       header: "Bill",
@@ -259,30 +316,23 @@ function rentalColumns(
     {
       header: "",
       render: (r) =>
-        r.status === "active" && (canManage || refId(r.renter) === currentUserId) ? (
+        r.status === "active" ? (
           <button type="button" className="btn btn--ghost btn--sm" onClick={() => onClose(r._id)}>
             Close
           </button>
         ) : null,
-    }
-  );
-
-  return columns;
+    },
+  ];
 }
 
 export function BasketsPage() {
-  const { user } = useAuth();
   const { notify } = useToast();
-  const canManage = user?.role === "admin" || user?.role === "staff";
-  const canRent = canManage || user?.role === "farmer" || user?.role === "market_woman" || user?.role === "trader";
   const [modalOpen, setModalOpen] = useState(false);
 
   const unitsRes = useResource(() => CoolingUnitsApi.list(), []);
   const basketsRes = useResource(() => BasketsApi.list(), []);
-  const rentalsRes = useResource(
-    () => (canManage ? BasketRentalsApi.list() : BasketRentalsApi.list({ renter: user?._id })),
-    [canManage, user?._id]
-  );
+  const clientsRes = useResource(() => ClientsApi.list(), []);
+  const rentalsRes = useResource(() => BasketRentalsApi.list(), []);
 
   async function closeRental(id: string) {
     try {
@@ -310,20 +360,24 @@ export function BasketsPage() {
         title="Baskets & Rentals"
         lede="Modular cold baskets, rented pay-per-use by weight. Close a rental to compute the final bill and free the basket."
         action={
-          canRent && (
-            <button type="button" className="btn btn--primary" onClick={() => setModalOpen(true)} disabled={basketsRes.loading}>
-              Rent a basket
-            </button>
-          )
+          <button type="button" className="btn btn--primary" onClick={() => setModalOpen(true)} disabled={basketsRes.loading}>
+            Rent a basket
+          </button>
         }
       />
 
       {modalOpen && (
-        <RentBasketModal availableBaskets={availableBaskets} onClose={() => setModalOpen(false)} onCreated={refreshAll} />
+        <RentBasketModal
+          availableBaskets={availableBaskets}
+          clients={clientsRes.data?.data ?? []}
+          onClose={() => setModalOpen(false)}
+          onCreated={refreshAll}
+          onClientRegistered={clientsRes.reload}
+        />
       )}
 
       <div className="section">
-        <Panel title={canManage ? "All rentals" : "Your rentals"}>
+        <Panel title="All rentals">
           {rentalsRes.loading ? (
             <Spinner />
           ) : (
@@ -331,7 +385,7 @@ export function BasketsPage() {
               rows={rentalsRes.data?.data ?? []}
               rowKey={(r) => r._id}
               emptyText="No rentals yet."
-              columns={rentalColumns(canManage, user?._id, closeRental)}
+              columns={rentalColumns(closeRental)}
             />
           )}
         </Panel>
@@ -354,14 +408,12 @@ export function BasketsPage() {
                   { header: "Status", render: (b) => <Badge tone={basketTone(b.status)}>{b.status}</Badge> },
                 ]}
               />
-              {canManage && (
-                <div style={{ marginTop: 18, borderTop: "1px solid var(--border-soft)", paddingTop: 16 }}>
-                  <NewBasketForm
-                    units={(unitsRes.data?.data ?? []).map((u) => ({ _id: u._id, unitCode: u.unitCode }))}
-                    onCreated={basketsRes.reload}
-                  />
-                </div>
-              )}
+              <div style={{ marginTop: 18, borderTop: "1px solid var(--border-soft)", paddingTop: 16 }}>
+                <NewBasketForm
+                  units={(unitsRes.data?.data ?? []).map((u) => ({ _id: u._id, unitCode: u.unitCode }))}
+                  onCreated={basketsRes.reload}
+                />
+              </div>
             </>
           )}
         </Panel>

@@ -16,7 +16,7 @@ export interface IUser extends Document {
   };
   isActive: boolean;
   /** The bootstrap admin created by `npm run create-admin` — the fallback alert
-   *  recipient for any hub that hasn't been assigned to a specific admin/staff yet. */
+   *  recipient for any hub that hasn't been assigned to a specific admin/operator yet. */
   isMainAdmin: boolean;
   comparePassword(candidate: string): Promise<boolean>;
   createdAt: Date;
@@ -35,7 +35,7 @@ const userSchema = new Schema<IUser>(
     },
     password: { type: String, required: true, minlength: 8, select: false },
     phone: { type: String, trim: true },
-    role: { type: String, enum: ROLES, default: "learner", required: true },
+    role: { type: String, enum: ROLES, required: true },
     organization: { type: Schema.Types.ObjectId, ref: "Organization" },
     location: {
       community: { type: String, trim: true },

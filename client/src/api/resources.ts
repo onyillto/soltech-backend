@@ -5,12 +5,10 @@ import type {
   BasketRental,
   BasketRentalItem,
   BasketRentalSummary,
+  Client,
   ColdBoxLog,
-  Course,
-  CourseModule,
   CoolingHub,
   CoolingUnit,
-  Enrollment,
   Organization,
   Payment,
   Role,
@@ -33,6 +31,12 @@ export const UsersApi = {
   update: (id: string, body: Partial<Pick<User, "role" | "isActive" | "name">>) =>
     request<ApiEnvelope<User>>(`/users/${id}`, { method: "PATCH", body }),
   remove: (id: string) => request<void>(`/users/${id}`, { method: "DELETE" }),
+};
+
+export const ClientsApi = {
+  list: (query?: { organization?: string }) => request<ApiEnvelope<Client[]>>("/clients", { query }),
+  create: (body: { name: string; phone: string; email?: string; organization?: string }) =>
+    request<ApiEnvelope<Client>>("/clients", { method: "POST", body }),
 };
 
 export const OrganizationsApi = {
@@ -72,9 +76,9 @@ export const BasketsApi = {
 };
 
 export const BasketRentalsApi = {
-  list: (query?: { basket?: string; renter?: string; status?: string }) =>
+  list: (query?: { basket?: string; client?: string; status?: string }) =>
     request<ApiEnvelope<BasketRental[]>>("/basket-rentals", { query }),
-  create: (body: { basket: string; items: BasketRentalItem[]; notes?: string }) =>
+  create: (body: { basket: string; client: string; items: BasketRentalItem[]; notes?: string }) =>
     request<ApiEnvelope<BasketRental>>("/basket-rentals", { method: "POST", body }),
   close: (id: string) =>
     request<ApiEnvelope<BasketRental>>(`/basket-rentals/${id}/close`, { method: "PATCH" }),
@@ -89,7 +93,7 @@ export const PaymentsApi = {
 };
 
 export const TelemetryApi = {
-  list: (query?: { unit?: string }) => request<ApiEnvelope<TelemetryReading[]>>("/telemetry", { query }),
+  list: (query?: { unit?: string; limit?: number }) => request<ApiEnvelope<TelemetryReading[]>>("/telemetry", { query }),
   latest: (unit: string) => request<ApiEnvelope<TelemetryReading | null>>("/telemetry/latest", { query: { unit } }),
   summary: (unit: string, hours = 24) =>
     request<ApiEnvelope<TelemetrySummary>>("/telemetry/summary", { query: { unit, hours } }),
@@ -99,27 +103,5 @@ export const TelemetryApi = {
       method: "POST",
       body: { unit, temperatureC, batteryPercent, source: "sensor" },
       headers: { "x-device-key": deviceKey },
-    }),
-};
-
-export const CoursesApi = {
-  list: () => request<ApiEnvelope<Course[]>>("/courses"),
-  create: (body: Partial<Course>) => request<ApiEnvelope<Course>>("/courses", { method: "POST", body }),
-};
-
-export const ModulesApi = {
-  list: (query?: { course?: string }) => request<ApiEnvelope<CourseModule[]>>("/modules", { query }),
-  create: (body: { course: string; title: string; content: string; order?: number }) =>
-    request<ApiEnvelope<CourseModule>>("/modules", { method: "POST", body }),
-};
-
-export const EnrollmentsApi = {
-  list: (query?: { learner?: string; course?: string }) =>
-    request<ApiEnvelope<Enrollment[]>>("/enrollments", { query }),
-  create: (course: string) => request<ApiEnvelope<Enrollment>>("/enrollments", { method: "POST", body: { course } }),
-  completeModule: (id: string, moduleId: string) =>
-    request<ApiEnvelope<Enrollment>>(`/enrollments/${id}/complete-module`, {
-      method: "PATCH",
-      body: { moduleId },
     }),
 };

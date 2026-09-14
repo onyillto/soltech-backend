@@ -4,7 +4,7 @@ import { protect, authorize } from "../middleware/auth";
 
 const router = Router();
 
-router.use(protect, authorize("admin", "staff"));
+router.use(protect, authorize("admin", "operator"));
 
 /**
  * @swagger
@@ -14,7 +14,7 @@ router.use(protect, authorize("admin", "staff"));
  *     description: >
  *       System-generated only — created when a unit stays at or above the
  *       temperature threshold for the configured sustained period while it
- *       has produce in it. Admin/staff only.
+ *       has produce in it. Admin/operator only.
  *     tags: [Alerts]
  *     security: [{ bearerAuth: [] }]
  *     parameters:

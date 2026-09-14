@@ -8,12 +8,12 @@ const router = Router();
 
 router.use(protect);
 
-router.get("/", authorize("admin", "staff"), paymentController.list);
-router.get("/:id", authorize("admin", "staff"), paymentController.getOne);
+router.get("/", authorize("admin", "operator"), paymentController.list);
+router.get("/:id", authorize("admin", "operator"), paymentController.getOne);
 
 router.post(
   "/",
-  authorize("admin", "staff"),
+  authorize("admin", "operator"),
   [
     body("rental").isMongoId().withMessage("A valid rental id is required"),
     body("amountKobo").isInt({ min: 0 }).withMessage("amountKobo must be a non-negative integer"),

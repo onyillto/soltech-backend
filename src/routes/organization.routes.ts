@@ -13,7 +13,7 @@ router.get("/:id", organizationController.getOne);
 
 router.post(
   "/",
-  authorize("admin", "staff"),
+  authorize("admin", "operator"),
   [
     body("name").trim().notEmpty().withMessage("Name is required"),
     body("type")
@@ -24,7 +24,7 @@ router.post(
   organizationController.create
 );
 
-router.patch("/:id", authorize("admin", "staff"), organizationController.update);
+router.patch("/:id", authorize("admin", "operator"), organizationController.update);
 router.delete("/:id", authorize("admin"), organizationController.remove);
 
 export default router;

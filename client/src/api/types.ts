@@ -1,4 +1,4 @@
-export type Role = "admin" | "staff" | "farmer" | "market_woman" | "trader" | "learner";
+export type Role = "admin" | "operator";
 
 export interface ApiEnvelope<T> {
   success: boolean;
@@ -14,6 +14,19 @@ export interface User {
   role: Role;
   organization?: Organization | string;
   location?: { community?: string; state?: string; country?: string };
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface Client {
+  _id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  organization?: Organization | string;
+  location?: { community?: string; state?: string; country?: string };
+  notes?: string;
+  createdBy?: User | string;
   isActive: boolean;
   createdAt: string;
 }
@@ -87,7 +100,7 @@ export interface BasketRentalItem {
 export interface BasketRental {
   _id: string;
   basket: Basket | string;
-  renter: User | string;
+  client: Client | string;
   items: BasketRentalItem[];
   totalQuantityKg: number;
   startAt: string;
@@ -137,6 +150,7 @@ export interface TelemetryReading {
   unit: CoolingUnit | string;
   recordedAt: string;
   temperatureC: number;
+  humidityPercent?: number;
   batteryPercent?: number;
   solarInputWatts?: number;
   energyConsumedWh?: number;
@@ -152,41 +166,4 @@ export interface TelemetrySummary {
   avgBatteryPercent: number | null;
   totalEnergyConsumedWh: number | null;
   readingCount: number;
-}
-
-export type CourseCategory =
-  | "sustainable_cooling"
-  | "solar_energy"
-  | "food_preservation"
-  | "business_skills";
-
-export interface Course {
-  _id: string;
-  title: string;
-  description: string;
-  category: CourseCategory;
-  level: "beginner" | "intermediate" | "advanced";
-  durationHours: number;
-  instructor?: User | string;
-  isPublished: boolean;
-}
-
-export interface CourseModule {
-  _id: string;
-  course: Course | string;
-  title: string;
-  content: string;
-  order: number;
-}
-
-export interface Enrollment {
-  _id: string;
-  learner: User | string;
-  course: Course | string;
-  completedModules: (CourseModule | string)[];
-  progressPercent: number;
-  status: "in_progress" | "completed" | "dropped";
-  enrolledAt: string;
-  completedAt?: string;
-  certificateIssued: boolean;
 }

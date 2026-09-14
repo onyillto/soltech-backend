@@ -14,9 +14,10 @@ router.get("/:id", basketRentalController.getOne);
 
 router.post(
   "/",
-  authorize("admin", "staff", "farmer", "market_woman", "trader"),
+  authorize("admin", "operator"),
   [
     body("basket").isMongoId().withMessage("A valid basket id is required"),
+    body("client").isMongoId().withMessage("A valid client id is required"),
     body("items").isArray({ min: 1 }).withMessage("At least one produce item is required"),
     body("items.*.produceType").trim().notEmpty().withMessage("Each item needs a produce type"),
     body("items.*.quantityKg")
@@ -27,7 +28,7 @@ router.post(
   basketRentalController.create
 );
 
-router.patch("/:id/close", basketRentalController.close);
-router.delete("/:id", authorize("admin", "staff"), basketRentalController.remove);
+router.patch("/:id/close", authorize("admin", "operator"), basketRentalController.close);
+router.delete("/:id", authorize("admin", "operator"), basketRentalController.remove);
 
 export default router;
