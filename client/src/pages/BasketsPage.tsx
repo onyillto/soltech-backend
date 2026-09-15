@@ -1,15 +1,15 @@
 import { useState } from "react";
-import type { FormEvent } from "react";
 import { useResource } from "../lib/useResource";
 import { useToast } from "../state/ToastContext";
-import { BasketRentalsApi, BasketsApi, ClientsApi, CoolingUnitsApi } from "../api/resources";
+import { BasketRentalsApi, BasketsApi, ClientsApi } from "../api/resources";
 import { DataTable, type Column } from "../components/DataTable";
-import { Badge, Field, PageHeader, Panel, Spinner } from "../components/ui";
+import { Badge, Field, PageHeader, Pager, Panel, Spinner, StatCard } from "../components/ui";
 import { Modal } from "../components/Modal";
+import { Combobox, type ComboboxOption } from "../components/Combobox";
 import { ApiError } from "../api/client";
-import { formatDate, formatNaira, refName } from "../lib/format";
+import { formatDate, formatItems, formatNaira, refId, refName } from "../lib/format";
 import { dailyRateNairaForWeight } from "../lib/pricing";
-import type { BasketRental, Client } from "../api/types";
+import type { Basket, BasketRental, Client } from "../api/types";
 
 function basketTone(status: string) {
   if (status === "available") return "green" as const;
@@ -23,136 +23,67 @@ function rentalTone(status: string) {
   return "muted" as const;
 }
 
-function NewBasketForm({ units, onCreated }: { units: { _id: string; unitCode: string }[]; onCreated: () => void }) {
-  const { notify } = useToast();
-  const [unit, setUnit] = useState(units[0]?._id ?? "");
-  const [basketNumber, setBasketNumber] = useState(1);
-  const [capacityKg, setCapacityKg] = useState(20);
-  const [submitting, setSubmitting] = useState(false);
-
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    if (!unit) return notify("Create a cooling unit first", "error");
-    setSubmitting(true);
-    try {
-      await BasketsApi.create({ unit, basketNumber, capacityKg });
-      notify(`Basket #${basketNumber} added`, "success");
-      onCreated();
-    } catch (err) {
-      notify(err instanceof ApiError ? err.message : "Failed to create basket", "error");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <form onSubmit={submit}>
-      <div className="form-grid">
-        <Field label="Unit">
-          <select value={unit} onChange={(e) => setUnit(e.target.value)}>
-            {units.map((u) => (
-              <option key={u._id} value={u._id}>
-                {u.unitCode}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Basket number">
-          <input type="number" min={1} value={basketNumber} onChange={(e) => setBasketNumber(Number(e.target.value))} />
-        </Field>
-        <Field label="Capacity (kg)">
-          <input type="number" min={0} value={capacityKg} onChange={(e) => setCapacityKg(Number(e.target.value))} />
-        </Field>
-      </div>
-      <div className="form-actions">
-        <button type="submit" className="btn btn--primary" disabled={submitting || !unit}>
-          {submitting ? "Adding…" : "Add basket"}
-        </button>
-      </div>
-    </form>
-  );
-}
-
-interface ItemRow {
-  produceType: string;
-  quantityKg: string;
-}
-
-const EMPTY_ITEM: ItemRow = { produceType: "", quantityKg: "" };
-
-/** Starting a rental: pick an available basket, pick which client it's for, list every
- * produce item going in (weighed on the scale you already have), and see the price
- * before confirming. */
+/**
+ * Starting a rental: pick a basket — only the ones actually free to use show up
+ * here, a basket that's occupied or under maintenance never appears in this list
+ * at all — then take the client's name, phone, and a description + weight of
+ * what's going in, and see the price before confirming.
+ */
 function RentBasketModal({
-  availableBaskets,
+  baskets,
   clients,
   onClose,
   onCreated,
   onClientRegistered,
 }: {
-  availableBaskets: { _id: string; basketNumber: number; capacityKg?: number }[];
+  baskets: Basket[];
   clients: Client[];
   onClose: () => void;
   onCreated: () => void;
   onClientRegistered: () => void;
 }) {
   const { notify } = useToast();
+  const availableBaskets = baskets.filter((b) => b.status === "available").sort((a, b) => a.basketNumber - b.basketNumber);
+
   const [basket, setBasket] = useState(availableBaskets[0]?._id ?? "");
-  const [client, setClient] = useState(clients[0]?._id ?? "");
-  const [addingClient, setAddingClient] = useState(false);
-  const [newClientName, setNewClientName] = useState("");
-  const [newClientPhone, setNewClientPhone] = useState("");
-  const [registeringClient, setRegisteringClient] = useState(false);
-  const [items, setItems] = useState<ItemRow[]>([{ ...EMPTY_ITEM }]);
+  const [clientName, setClientName] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
+  const [description, setDescription] = useState("");
+  const [weightKg, setWeightKg] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const basketOptions: ComboboxOption[] = availableBaskets.map((b) => ({
+    value: b._id,
+    label: `Basket #${b.basketNumber}${b.capacityKg ? ` (max ${b.capacityKg}kg)` : ""}`,
+    meta: b.location,
+  }));
+
   const selectedBasket = availableBaskets.find((b) => b._id === basket);
-  const totalKg = items.reduce((sum, item) => sum + (Number(item.quantityKg) || 0), 0);
-  const overCapacity = !!selectedBasket?.capacityKg && totalKg > selectedBasket.capacityKg;
-  const dailyRateNaira = totalKg > 0 ? dailyRateNairaForWeight(totalKg) : 0;
+  const weight = Number(weightKg) || 0;
+  const overCapacity = !!selectedBasket?.capacityKg && weight > selectedBasket.capacityKg;
+  const dailyRateNaira = weight > 0 ? dailyRateNairaForWeight(weight) : 0;
 
-  const hasValidItems = items.some((item) => item.produceType.trim() && Number(item.quantityKg) > 0);
-  const canConfirm = !!basket && !!client && hasValidItems && !overCapacity && !submitting;
-
-  async function registerClient() {
-    if (!newClientName.trim() || !newClientPhone.trim()) return;
-    setRegisteringClient(true);
-    try {
-      const res = await ClientsApi.create({ name: newClientName.trim(), phone: newClientPhone.trim() });
-      notify(`${res.data.name} registered`, "success");
-      onClientRegistered();
-      setClient(res.data._id);
-      setAddingClient(false);
-      setNewClientName("");
-      setNewClientPhone("");
-    } catch (err) {
-      notify(err instanceof ApiError ? err.message : "Failed to register client", "error");
-    } finally {
-      setRegisteringClient(false);
-    }
-  }
-
-  function updateItem(index: number, patch: Partial<ItemRow>) {
-    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
-  }
-
-  function addItem() {
-    setItems((prev) => [...prev, { ...EMPTY_ITEM }]);
-  }
-
-  function removeItem(index: number) {
-    setItems((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
-  }
+  const canConfirm =
+    !!basket && !!clientName.trim() && !!clientPhone.trim() && !!description.trim() && weight > 0 && !overCapacity && !submitting;
 
   async function confirm() {
-    const payloadItems = items
-      .filter((item) => item.produceType.trim() && Number(item.quantityKg) > 0)
-      .map((item) => ({ produceType: item.produceType.trim(), quantityKg: Number(item.quantityKg) }));
-
-    if (!basket || !client || payloadItems.length === 0) return;
+    if (!canConfirm) return;
     setSubmitting(true);
     try {
-      const res = await BasketRentalsApi.create({ basket, client, items: payloadItems });
+      // Reuse an existing client with this exact phone rather than creating a duplicate record.
+      const existing = clients.find((c) => c.phone.trim() === clientPhone.trim());
+      let clientId = existing?._id;
+      if (!clientId) {
+        const clientRes = await ClientsApi.create({ name: clientName.trim(), phone: clientPhone.trim() });
+        clientId = clientRes.data._id;
+        onClientRegistered();
+      }
+
+      const res = await BasketRentalsApi.create({
+        basket,
+        client: clientId,
+        items: [{ produceType: description.trim(), quantityKg: weight }],
+      });
       notify(`Rental started — ${formatNaira(res.data.rateKoboPerDay)}/day from now`, "success");
       onCreated();
       onClose();
@@ -173,116 +104,57 @@ function RentBasketModal({
             Cancel
           </button>
           <button type="button" className="btn btn--primary" disabled={!canConfirm} onClick={confirm}>
-            {submitting ? "Starting…" : totalKg > 0 ? `Confirm — ₦${dailyRateNaira}/day` : "Confirm"}
+            {submitting ? "Starting…" : weight > 0 ? `Confirm — ₦${dailyRateNaira}/day` : "Confirm"}
           </button>
         </>
       }
     >
-      <Field label="Available basket">
-        <select value={basket} onChange={(e) => setBasket(e.target.value)}>
-          {availableBaskets.length === 0 && <option value="">No baskets available</option>}
-          {availableBaskets.map((b) => (
-            <option key={b._id} value={b._id}>
-              Basket #{b.basketNumber}
-              {b.capacityKg ? ` (max ${b.capacityKg}kg)` : ""}
-            </option>
-          ))}
-        </select>
+      <Field label="Basket">
+        <Combobox
+          options={basketOptions}
+          value={basket}
+          onChange={setBasket}
+          placeholder="Select an available basket"
+          searchPlaceholder="Search by basket #…"
+          emptyText="No available baskets."
+        />
       </Field>
-
-      {addingClient ? (
-        <div className="form-grid" style={{ marginTop: 12, gridTemplateColumns: "1fr 1fr" }}>
-          <Field label="New client name">
-            <input value={newClientName} onChange={(e) => setNewClientName(e.target.value)} placeholder="Farida Farmer" />
-          </Field>
-          <Field label="Phone">
-            <input value={newClientPhone} onChange={(e) => setNewClientPhone(e.target.value)} placeholder="+2348012345678" />
-          </Field>
-          <div style={{ display: "flex", gap: 8, gridColumn: "1 / -1" }}>
-            <button
-              type="button"
-              className="btn btn--primary btn--sm"
-              disabled={!newClientName.trim() || !newClientPhone.trim() || registeringClient}
-              onClick={registerClient}
-            >
-              {registeringClient ? "Registering…" : "Register & select"}
-            </button>
-            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setAddingClient(false)}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        <Field label="Client">
-          <div style={{ display: "flex", gap: 8 }}>
-            <select value={client} onChange={(e) => setClient(e.target.value)} style={{ flex: 1 }}>
-              {clients.length === 0 && <option value="">No clients registered</option>}
-              {clients.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name} — {c.phone}
-                </option>
-              ))}
-            </select>
-            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setAddingClient(true)}>
-              + New
-            </button>
-          </div>
-        </Field>
+      {availableBaskets.length === 0 && (
+        <p className="error-text">Every basket is currently occupied or under maintenance.</p>
       )}
 
-      <div className="section-title" style={{ marginTop: 16 }}>
-        Produce going in
+      <div className="form-grid" style={{ marginTop: 12 }}>
+        <Field label="Client name">
+          <input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Farida Farmer" />
+        </Field>
+        <Field label="Phone number">
+          <input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} placeholder="+2348012345678" />
+        </Field>
       </div>
-      {items.map((item, i) => (
-        <div key={i} className="form-grid" style={{ marginBottom: 6, gridTemplateColumns: "1fr 1fr auto" }}>
-          <Field label={i === 0 ? "Produce" : ""}>
-            <input
-              value={item.produceType}
-              onChange={(e) => updateItem(i, { produceType: e.target.value })}
-              placeholder="Tomatoes"
-            />
-          </Field>
-          <Field label={i === 0 ? "Weight (kg) — from your scale" : ""}>
-            <input
-              type="number"
-              min={0}
-              step="0.1"
-              value={item.quantityKg}
-              onChange={(e) => updateItem(i, { quantityKg: e.target.value })}
-              placeholder="e.g. 12"
-            />
-          </Field>
-          <div style={{ display: "flex", alignItems: i === 0 ? "flex-end" : "center", paddingBottom: i === 0 ? 1 : 0 }}>
-            <button
-              type="button"
-              className="btn btn--ghost btn--sm"
-              onClick={() => removeItem(i)}
-              disabled={items.length === 1}
-              aria-label="Remove item"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      ))}
-      <button type="button" className="btn btn--ghost btn--sm" onClick={addItem} style={{ marginBottom: 16 }}>
-        + Add another produce
-      </button>
+
+      <div className="form-grid">
+        <Field label="Description of goods">
+          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Tomatoes and pepper" />
+        </Field>
+        <Field label="Weight (kg) — from your scale">
+          <input type="number" min={0} step="0.1" value={weightKg} onChange={(e) => setWeightKg(e.target.value)} placeholder="e.g. 12" />
+        </Field>
+      </div>
 
       <div className="rental-price-preview">
         <div>
-          <div className="rental-price-preview-total">{totalKg}kg total</div>
+          <div className="rental-price-preview-total">{weight}kg total</div>
           {selectedBasket?.capacityKg && (
             <div className="hint" style={{ marginTop: 0 }}>
               basket capacity {selectedBasket.capacityKg}kg
             </div>
           )}
         </div>
-        <div className="rental-price-preview-rate">{totalKg > 0 ? `₦${dailyRateNaira}/day` : "—"}</div>
+        <div className="rental-price-preview-rate">{weight > 0 ? `₦${dailyRateNaira}/day` : "—"}</div>
       </div>
       {overCapacity && (
         <p className="error-text">
-          Total weight ({totalKg}kg) exceeds this basket's capacity ({selectedBasket?.capacityKg}kg).
+          Weight ({weight}kg) exceeds this basket's capacity ({selectedBasket?.capacityKg}kg).
         </p>
       )}
     </Modal>
@@ -328,31 +200,49 @@ function rentalColumns(onClose: (id: string) => void): Column<BasketRental>[] {
 export function BasketsPage() {
   const { notify } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
+  const [basketsPage, setBasketsPage] = useState(1);
+  const [rentalsPage, setRentalsPage] = useState(1);
 
-  const unitsRes = useResource(() => CoolingUnitsApi.list(), []);
-  const basketsRes = useResource(() => BasketsApi.list(), []);
-  const clientsRes = useResource(() => ClientsApi.list(), []);
-  const rentalsRes = useResource(() => BasketRentalsApi.list(), []);
+  // The visible, paginated tables (20 per page, like every other list in the app).
+  const basketsRes = useResource(() => BasketsApi.list({ page: basketsPage }), [basketsPage]);
+  const rentalsRes = useResource(() => BasketRentalsApi.list({ page: rentalsPage }), [rentalsPage]);
+
+  // Separate, un-paginated fetches (capped at 100 — the backend's own per-request max) for things
+  // that need the *whole* set regardless of which table page you're looking at: which baskets the
+  // "Rent a basket" modal can offer, which rental currently occupies each basket, and the
+  // available/occupied/maintenance counts in the stat row above.
+  const availableBasketsRes = useResource(() => BasketsApi.list({ status: "available", limit: 100 }), []);
+  const occupiedCountRes = useResource(() => BasketsApi.list({ status: "occupied", limit: 1 }), []);
+  const maintenanceCountRes = useResource(() => BasketsApi.list({ status: "maintenance", limit: 1 }), []);
+  const activeRentalsRes = useResource(() => BasketRentalsApi.list({ status: "active", limit: 100 }), []);
+  const clientsRes = useResource(() => ClientsApi.list({ limit: 100 }), []);
 
   async function closeRental(id: string) {
     try {
       const res = await BasketRentalsApi.close(id);
       notify(`Rental closed — total ${formatNaira(res.data.amountDueKobo)}`, "success");
-      rentalsRes.reload();
-      basketsRes.reload();
+      refreshAll();
     } catch (err) {
       notify(err instanceof ApiError ? err.message : "Failed to close rental", "error");
     }
   }
 
-  const availableBaskets = (basketsRes.data?.data ?? [])
-    .filter((b) => b.status === "available")
-    .map((b) => ({ _id: b._id, basketNumber: b.basketNumber, capacityKg: b.capacityKg }));
+  const baskets = basketsRes.data?.data ?? [];
+  const availableCount = availableBasketsRes.data?.pagination?.total ?? 0;
+  const occupiedCount = occupiedCountRes.data?.pagination?.total ?? 0;
+  const maintenanceCount = maintenanceCountRes.data?.pagination?.total ?? 0;
 
-  const refreshAll = () => {
+  // Which rental currently has each basket, so the table can show what's inside it.
+  const activeRentalByBasket = new Map((activeRentalsRes.data?.data ?? []).map((r) => [refId(r.basket), r]));
+
+  function refreshAll() {
     basketsRes.reload();
     rentalsRes.reload();
-  };
+    availableBasketsRes.reload();
+    occupiedCountRes.reload();
+    maintenanceCountRes.reload();
+    activeRentalsRes.reload();
+  }
 
   return (
     <>
@@ -366,9 +256,16 @@ export function BasketsPage() {
         }
       />
 
+      <div className="stat-grid section">
+        <StatCard label="Available baskets" value={availableCount} accent="green" />
+        <StatCard label="Occupied" value={occupiedCount} accent="amber" />
+        <StatCard label="Under maintenance" value={maintenanceCount} accent="red" />
+        <StatCard label="Total baskets" value={availableCount + occupiedCount + maintenanceCount} accent="teal" />
+      </div>
+
       {modalOpen && (
         <RentBasketModal
-          availableBaskets={availableBaskets}
+          baskets={availableBasketsRes.data?.data ?? []}
           clients={clientsRes.data?.data ?? []}
           onClose={() => setModalOpen(false)}
           onCreated={refreshAll}
@@ -381,12 +278,20 @@ export function BasketsPage() {
           {rentalsRes.loading ? (
             <Spinner />
           ) : (
-            <DataTable
-              rows={rentalsRes.data?.data ?? []}
-              rowKey={(r) => r._id}
-              emptyText="No rentals yet."
-              columns={rentalColumns(closeRental)}
-            />
+            <>
+              <DataTable
+                rows={rentalsRes.data?.data ?? []}
+                rowKey={(r) => r._id}
+                emptyText="No rentals yet."
+                columns={rentalColumns(closeRental)}
+              />
+              <Pager
+                page={rentalsRes.data?.pagination?.page ?? 1}
+                pages={rentalsRes.data?.pagination?.pages ?? 1}
+                total={rentalsRes.data?.pagination?.total}
+                onPageChange={setRentalsPage}
+              />
+            </>
           )}
         </Panel>
       </div>
@@ -398,22 +303,39 @@ export function BasketsPage() {
           ) : (
             <>
               <DataTable
-                rows={basketsRes.data?.data ?? []}
+                rows={baskets}
                 rowKey={(b) => b._id}
                 emptyText="No baskets yet."
                 columns={[
                   { header: "Unit", render: (b) => refName(b.unit) },
                   { header: "#", render: (b) => b.basketNumber },
+                  { header: "Location", render: (b) => b.location ?? "—" },
                   { header: "Capacity", render: (b) => (b.capacityKg ? `${b.capacityKg}kg` : "—") },
                   { header: "Status", render: (b) => <Badge tone={basketTone(b.status)}>{b.status}</Badge> },
+                  {
+                    header: "Current rental",
+                    render: (b) => {
+                      if (b.status === "maintenance") return <span className="hint">Under maintenance</span>;
+                      const rental = activeRentalByBasket.get(b._id);
+                      if (!rental) return "—";
+                      return (
+                        <span>
+                          {refName(rental.client)} — {formatItems(rental.items)}
+                          <span className="hint" style={{ marginLeft: 6 }}>
+                            since {formatDate(rental.startAt)}
+                          </span>
+                        </span>
+                      );
+                    },
+                  },
                 ]}
               />
-              <div style={{ marginTop: 18, borderTop: "1px solid var(--border-soft)", paddingTop: 16 }}>
-                <NewBasketForm
-                  units={(unitsRes.data?.data ?? []).map((u) => ({ _id: u._id, unitCode: u.unitCode }))}
-                  onCreated={basketsRes.reload}
-                />
-              </div>
+              <Pager
+                page={basketsRes.data?.pagination?.page ?? 1}
+                pages={basketsRes.data?.pagination?.pages ?? 1}
+                total={basketsRes.data?.pagination?.total}
+                onPageChange={setBasketsPage}
+              />
             </>
           )}
         </Panel>

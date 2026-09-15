@@ -68,3 +68,32 @@ export function Field({
 export function Spinner() {
   return <span className="spinner" aria-label="Loading" />;
 }
+
+/** Prev/Next pager for a list backed by the API's {page, pages, total} pagination. Renders nothing for a single page. */
+export function Pager({
+  page,
+  pages,
+  total,
+  onPageChange,
+}: {
+  page: number;
+  pages: number;
+  total?: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (pages <= 1) return null;
+  return (
+    <div className="pager">
+      <button type="button" className="btn btn--ghost btn--sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+        ← Prev
+      </button>
+      <span className="pager-status">
+        Page {page} of {pages}
+        {total !== undefined ? ` (${total} total)` : ""}
+      </span>
+      <button type="button" className="btn btn--ghost btn--sm" disabled={page >= pages} onClick={() => onPageChange(page + 1)}>
+        Next →
+      </button>
+    </div>
+  );
+}

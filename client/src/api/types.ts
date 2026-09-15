@@ -90,6 +90,8 @@ export interface Basket {
   basketNumber: number;
   status: "available" | "occupied" | "maintenance";
   capacityKg?: number;
+  /** Free-text description of where it physically sits, e.g. "Row 3, Position 7". */
+  location?: string;
 }
 
 export interface BasketRentalItem {

@@ -7,7 +7,6 @@ import { LoginPage } from "./pages/LoginPage";
 import { OverviewPage } from "./pages/OverviewPage";
 import { BasketsPage } from "./pages/BasketsPage";
 import { TransactionsPage } from "./pages/TransactionsPage";
-import { ClientsPage } from "./pages/ClientsPage";
 import { TelemetryPage } from "./pages/TelemetryPage";
 
 function App() {
@@ -25,7 +24,6 @@ function App() {
               }
             >
               <Route path="/" element={<OverviewPage />} />
-              <Route path="/clients" element={<ClientsPage />} />
               <Route path="/baskets" element={<BasketsPage />} />
               <Route path="/telemetry" element={<TelemetryPage />} />
               <Route path="/transactions" element={<TransactionsPage />} />

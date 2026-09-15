@@ -125,8 +125,20 @@ async function seed() {
   const unitWithKey = await CoolingUnit.findById(unit._id).select("+deviceKey");
 
   console.log("[seed] creating baskets...");
+  const BASKET_COUNT = 100;
+  const BASKETS_PER_ROW = 10;
   const basketDocs = await Basket.insertMany(
-    Array.from({ length: 10 }, (_, i) => ({ unit: unit._id, basketNumber: i + 1, capacityKg: 20 }))
+    Array.from({ length: BASKET_COUNT }, (_, i) => {
+      const basketNumber = i + 1;
+      const row = Math.ceil(basketNumber / BASKETS_PER_ROW);
+      const position = ((basketNumber - 1) % BASKETS_PER_ROW) + 1;
+      return {
+        unit: unit._id,
+        basketNumber,
+        capacityKg: 20,
+        location: `Row ${row}, Position ${position}`,
+      };
+    })
   );
 
   console.log("[seed] creating a sample rental + payment...");
@@ -208,6 +220,7 @@ async function seed() {
     `- Organization: Garki Ultra-Modern Market Traders Association (\`${org._id}\`)`,
     `- Cooling unit: TRL-001 (\`${unit._id}\`), device key for telemetry testing (\`x-device-key\` header):`,
     `  \`${unitWithKey?.deviceKey}\``,
+    `- ${BASKET_COUNT} baskets provisioned (#1-${BASKET_COUNT}), each with a location (Row/Position, ${BASKETS_PER_ROW} baskets per row)`,
     `- Basket #1 has an active rental by Farida Farmer (12kg tomatoes + 6kg pepper, 18kg total), with one ₦400 cash payment recorded`,
     "",
   ];

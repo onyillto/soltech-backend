@@ -50,7 +50,9 @@ router.post(
  *       Creates basketNumber startNumber..startNumber+count-1 for the unit.
  *       Idempotent — numbers that already exist are skipped, not duplicated,
  *       so it's safe to re-run. If `count` is omitted, it defaults to the
- *       unit's own `basketCapacity`.
+ *       unit's own `basketCapacity`. If `basketsPerRow` is given, each
+ *       created basket's `location` is auto-filled "Row N, Position M",
+ *       filling one row before starting the next.
  *     tags: [Baskets]
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
@@ -65,6 +67,7 @@ router.post(
  *               count: { type: integer, minimum: 1, maximum: 500, description: "Defaults to the unit's basketCapacity" }
  *               startNumber: { type: integer, minimum: 1, default: 1 }
  *               capacityKg: { type: number, description: "Applied to every basket created" }
+ *               basketsPerRow: { type: integer, minimum: 1, description: "When set, auto-fills location as 'Row N, Position M'" }
  *     responses:
  *       201:
  *         description: Baskets created (and/or skipped, if some numbers already existed)
@@ -78,6 +81,7 @@ router.post(
     body("unit").isMongoId().withMessage("A valid unit id is required"),
     body("count").optional().isInt({ min: 1, max: 500 }).withMessage("count must be between 1 and 500"),
     body("startNumber").optional().isInt({ min: 1 }).withMessage("startNumber must be a positive integer"),
+    body("basketsPerRow").optional().isInt({ min: 1 }).withMessage("basketsPerRow must be a positive integer"),
   ],
   validate,
   basketController.bulkCreate

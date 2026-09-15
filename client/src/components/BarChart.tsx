@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { DataTable } from "./DataTable";
+import { niceCeil } from "../lib/chartMath";
 
 export interface BarChartDatum {
   /** Stable key, e.g. an ISO date. */
@@ -7,15 +8,6 @@ export interface BarChartDatum {
   /** What's shown on the x-axis / table. */
   displayLabel: string;
   value: number;
-}
-
-/** Rounds up to a "nice" axis maximum (1/2/5/10 × a power of ten). */
-function niceCeil(value: number): number {
-  if (value <= 0) return 1;
-  const exponent = Math.floor(Math.log10(value));
-  const fraction = value / 10 ** exponent;
-  const niceFraction = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 5 ? 5 : 10;
-  return niceFraction * 10 ** exponent;
 }
 
 /**

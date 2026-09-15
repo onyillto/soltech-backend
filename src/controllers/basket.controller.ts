@@ -13,13 +13,26 @@ const base = crudFactory(Basket, {
 });
 
 /**
+ * Fills a row before starting the next — "Row 1, Position 1" through
+ * "Row 1, Position <basketsPerRow>", then "Row 2, Position 1", etc. Matches
+ * how a real stacked shelf gets loaded, and only depends on the basket's own
+ * number, so it stays consistent even if you provision in separate batches
+ * later, as long as the same basketsPerRow is used.
+ */
+function locationForBasketNumber(basketNumber: number, basketsPerRow: number): string {
+  const row = Math.ceil(basketNumber / basketsPerRow);
+  const position = ((basketNumber - 1) % basketsPerRow) + 1;
+  return `Row ${row}, Position ${position}`;
+}
+
+/**
  * Provisions every basket for a unit in one call instead of one POST per
  * basket — e.g. a newly deployed 110-basket trailer. Idempotent: numbers
  * that already exist for the unit are skipped, not duplicated, so it's safe
  * to re-run (to top up after adding capacity, for instance).
  */
 const bulkCreate = asyncHandler(async (req: Request, res: Response) => {
-  const { unit, startNumber = 1, capacityKg } = req.body;
+  const { unit, startNumber = 1, capacityKg, basketsPerRow } = req.body;
   if (!unit) throw ApiError.badRequest("unit is required");
 
   const unitDoc = await CoolingUnit.findById(unit);
@@ -42,7 +55,14 @@ const bulkCreate = asyncHandler(async (req: Request, res: Response) => {
 
   const toCreate = [];
   for (let n = startNumber; n <= endNumber; n++) {
-    if (!existingNumbers.has(n)) toCreate.push({ unit, basketNumber: n, capacityKg });
+    if (!existingNumbers.has(n)) {
+      toCreate.push({
+        unit,
+        basketNumber: n,
+        capacityKg,
+        location: basketsPerRow ? locationForBasketNumber(n, basketsPerRow) : undefined,
+      });
+    }
   }
 
   const created = toCreate.length ? await Basket.insertMany(toCreate) : [];

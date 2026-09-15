@@ -34,7 +34,8 @@ export const UsersApi = {
 };
 
 export const ClientsApi = {
-  list: (query?: { organization?: string }) => request<ApiEnvelope<Client[]>>("/clients", { query }),
+  list: (query?: { organization?: string; page?: number; limit?: number }) =>
+    request<ApiEnvelope<Client[]>>("/clients", { query }),
   create: (body: { name: string; phone: string; email?: string; organization?: string }) =>
     request<ApiEnvelope<Client>>("/clients", { method: "POST", body }),
 };
@@ -69,14 +70,20 @@ export const ColdBoxLogsApi = {
 };
 
 export const BasketsApi = {
-  list: (query?: { unit?: string; status?: string }) =>
+  list: (query?: { unit?: string; status?: string; page?: number; limit?: number }) =>
     request<ApiEnvelope<Basket[]>>("/baskets", { query }),
   create: (body: { unit: string; basketNumber: number; capacityKg?: number }) =>
     request<ApiEnvelope<Basket>>("/baskets", { method: "POST", body }),
+  /** Provisions a range of baskets for a unit in one call — idempotent, numbers that already exist are skipped, not duplicated. */
+  bulkCreate: (body: { unit: string; count?: number; startNumber?: number; capacityKg?: number; basketsPerRow?: number }) =>
+    request<ApiEnvelope<{ createdCount: number; skippedCount: number; created: Basket[] }>>("/baskets/bulk", {
+      method: "POST",
+      body,
+    }),
 };
 
 export const BasketRentalsApi = {
-  list: (query?: { basket?: string; client?: string; status?: string }) =>
+  list: (query?: { basket?: string; client?: string; status?: string; page?: number; limit?: number }) =>
     request<ApiEnvelope<BasketRental[]>>("/basket-rentals", { query }),
   create: (body: { basket: string; client: string; items: BasketRentalItem[]; notes?: string }) =>
     request<ApiEnvelope<BasketRental>>("/basket-rentals", { method: "POST", body }),

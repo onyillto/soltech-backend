@@ -5,7 +5,7 @@ import { useToast } from "../state/ToastContext";
 import { CoolingUnitsApi, TelemetryApi } from "../api/resources";
 import { Badge, Field, PageHeader, Panel, Spinner, StatCard } from "../components/ui";
 import { DataTable } from "../components/DataTable";
-import { BarChart } from "../components/BarChart";
+import { LineChart, type LineChartDatum } from "../components/LineChart";
 import { ApiError } from "../api/client";
 import { formatDate, refName } from "../lib/format";
 import { batteryTone, temperatureTone } from "../lib/coldChain";
@@ -118,11 +118,16 @@ export function TelemetryPage() {
   const readings = listRes.data?.data ?? []; // newest -> oldest, as the API returns them
   const chronological = [...readings].reverse(); // oldest -> newest, for the chart
 
-  const tempSeries = chronological.map((r) => ({
-    key: r._id,
-    displayLabel: formatPoint(r.recordedAt, hours),
-    value: Math.round(r.temperatureC * 10) / 10,
-  }));
+  function series(selector: (r: TelemetryReading) => number | undefined): LineChartDatum[] {
+    return chronological
+      .filter((r) => selector(r) !== undefined)
+      .map((r) => ({ key: r._id, displayLabel: formatPoint(r.recordedAt, hours), value: selector(r) as number }));
+  }
+
+  const tempSeries = series((r) => Math.round(r.temperatureC * 10) / 10);
+  const humiditySeries = series((r) => r.humidityPercent);
+  const batterySeries = series((r) => r.batteryPercent);
+  const solarSeries = series((r) => r.solarInputWatts);
 
   if (unitsRes.loading) return <Spinner />;
 
@@ -199,18 +204,29 @@ export function TelemetryPage() {
         </div>
       ) : null}
 
-      <div className="section">
-        <Panel title={`Temperature — last ${readings.length} reading${readings.length === 1 ? "" : "s"}`}>
+      <div className="section" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 14 }}>
+        <Panel title={`Temperature (°C) — last ${readings.length} reading${readings.length === 1 ? "" : "s"}`}>
           {listRes.loading ? (
             <Spinner />
-          ) : tempSeries.length > 0 ? (
-            <BarChart data={tempSeries} color="var(--brand)" valueLabel="°C" formatValue={(v) => `${v}°C`} />
           ) : (
-            <p className="hint" style={{ margin: 0 }}>
-              No readings yet.
-            </p>
+            <LineChart data={tempSeries} color="#2a78d6" valueLabel="°C" formatValue={(v) => `${v}°C`} />
           )}
         </Panel>
+        {batterySeries.length > 0 && (
+          <Panel title="Battery (%)">
+            <LineChart data={batterySeries} color="#eda100" valueLabel="%" formatValue={(v) => `${v}%`} />
+          </Panel>
+        )}
+        {humiditySeries.length > 0 && (
+          <Panel title="Humidity (%)">
+            <LineChart data={humiditySeries} color="#1baf7a" valueLabel="%" formatValue={(v) => `${v}%`} />
+          </Panel>
+        )}
+        {solarSeries.length > 0 && (
+          <Panel title="Solar input (W)">
+            <LineChart data={solarSeries} color="#eb6834" valueLabel="W" formatValue={(v) => `${v}W`} />
+          </Panel>
+        )}
       </div>
 
       <div className="section">
