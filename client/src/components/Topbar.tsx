@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Badge } from "./ui";
+import { API_BASE } from "../api/client";
 
 export function Topbar() {
   const [status, setStatus] = useState<"checking" | "online" | "offline">("checking");
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/v1/health")
+    fetch(`${API_BASE}/health`)
       .then((res) => {
         if (!cancelled) setStatus(res.ok ? "online" : "offline");
       })

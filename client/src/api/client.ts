@@ -1,4 +1,8 @@
-const API_BASE = "/api/v1";
+// Hardcoded to the deployed backend — the console is now its own separate
+// Vercel project/domain (no dev-proxy or same-origin rewrite to lean on in
+// production), so a relative "/api/v1" would resolve against this app's own
+// domain instead of the API's.
+export const API_BASE = "https://soltech-backend-drab.vercel.app/api/v1";
 const TOKEN_KEY = "soltech.token";
 
 export class ApiError extends Error {
@@ -29,13 +33,13 @@ interface RequestOptions {
 }
 
 function buildUrl(path: string, query?: RequestOptions["query"]) {
-  const url = new URL(API_BASE + path, window.location.origin);
+  const url = new URL(API_BASE + path);
   if (query) {
     for (const [key, value] of Object.entries(query)) {
       if (value !== undefined && value !== "") url.searchParams.set(key, String(value));
     }
   }
-  return url.pathname + url.search;
+  return url.toString();
 }
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {

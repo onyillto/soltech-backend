@@ -1,17 +1,12 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// Proxies /api to the Express backend so the client can call same-origin
-// relative paths in dev — no CORS configuration needed either side.
+// The API base URL is hardcoded (see src/api/client.ts) to the deployed
+// backend, so every request — dev or prod — goes straight there; nothing
+// here needs to proxy /api anymore.
 export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    proxy: {
-      "/api": {
-        target: "http://localhost:4000",
-        changeOrigin: true,
-      },
-    },
   },
 });
